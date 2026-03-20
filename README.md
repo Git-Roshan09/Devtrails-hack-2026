@@ -132,6 +132,7 @@ To balance robust data tracking with gig-worker "app fatigue," GigaChad uses a d
 ---
 
 ## > 🇦‌🇵‌🇵‌🇱‌🇮‌🇨‌🇦‌🇹‌🇮‌🇴‌🇳‌ 🇼‌🇴‌🇷‌🇰‌🇫‌🇱‌🇴‌🇼‌
+
 1. **Sunday Setup (Opt-In):** The rider receives a WhatsApp message with their dynamic weekly premium quote for the upcoming week. They accept and pay via a 1-click UPI link.
 2. **Shift Tracking:** The rider starts their Zepto shift. The GigaChad background app begins logging telemetry data (location, movement, connectivity) securely.
 3. **Disruption Detected:** A sudden cloudburst hits Velachery. Our backend APIs trigger a "Severe Disruption" flag for that specific hex-grid.
@@ -142,9 +143,6 @@ To balance robust data tracking with gig-worker "app fatigue," GigaChad uses a d
 
 ## > 🇦‌🇧‌🇴‌🇺‌🇹‌ 🇹‌🇭‌🇪‌ 🇦‌🇵‌🇵‌: 🇹‌🇭‌🇪‌ 🇩‌🇺‌🇦‌🇱‌-🇮‌🇳‌🇹‌🇪‌🇷‌🇫‌🇦‌🇨‌🇪‌ 🇦‌🇷‌🇨‌🇭‌🇮‌🇹‌🇪‌🇨‌🇹‌🇺‌🇷‌🇪‌
 Gig workers already run heavy, battery-draining navigation and delivery apps on budget smartphones. Forcing them to install another heavy insurance portal leads to instant uninstalls. GigaChad solves "App Fatigue" by splitting the architecture into two distinct layers:
-
-<img width="1406" height="992" alt="image" src="https://github.com/user-attachments/assets/8e5af6fb-99f5-4406-bbbc-f0e951ba5b60" />
-
 
 <img width="1406" height="992" alt="image" src="https://github.com/user-attachments/assets/8e5af6fb-99f5-4406-bbbc-f0e951ba5b60" />
 
@@ -246,6 +244,8 @@ A fully automated payout system is a massive target for fraud. We built GigaChad
 
 ## 🚨 🇪‌🇳‌🇹‌🇪‌🇷‌🇵‌🇷‌🇮‌🇸‌🇪‌-🇬‌🇷‌🇦‌🇩‌🇪‌ 🇫‌🇷‌🇦‌🇺‌🇩‌ 🇩‌🇪‌🇹‌🇪‌🇨‌🇹‌🇮‌🇴‌🇳‌
 A fully automated parametric system is highly vulnerable to GPS spoofing. If we just rely on location, a worker sitting at home can spoof their GPS to a flooded zone and collect free money. GigaChad uses multi-layered anomaly detection:
+
+<img width="1406" height="1200" alt="image" src="https://github.com/user-attachments/assets/afa29fe5-3785-49ea-a8b2-6d70ac6182e5" />
 
 * **Sensor Fusion Mismatch:** If the GPS claims the rider is in a storm, but the accelerometer shows the phone resting flat on a table and the barometer shows indoor pressure, the AI flags the claim.
 * **Network Triangulation:** If a rider claims to be trapped in a flooded street but the background app detects they are connected to their **Home WiFi**, the claim is instantly denied.
