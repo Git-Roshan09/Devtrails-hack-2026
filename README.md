@@ -143,6 +143,12 @@ To balance robust data tracking with gig-worker "app fatigue," GigaChad uses a d
 ## > 🇦‌🇧‌🇴‌🇺‌🇹‌ 🇹‌🇭‌🇪‌ 🇦‌🇵‌🇵‌: 🇹‌🇭‌🇪‌ 🇩‌🇺‌🇦‌🇱‌-🇮‌🇳‌🇹‌🇪‌🇷‌🇫‌🇦‌🇨‌🇪‌ 🇦‌🇷‌🇨‌🇭‌🇮‌🇹‌🇪‌🇨‌🇹‌🇺‌🇷‌🇪‌
 Gig workers already run heavy, battery-draining navigation and delivery apps on budget smartphones. Forcing them to install another heavy insurance portal leads to instant uninstalls. GigaChad solves "App Fatigue" by splitting the architecture into two distinct layers:
 
+<img width="1406" height="992" alt="image" src="https://github.com/user-attachments/assets/8e5af6fb-99f5-4406-bbbc-f0e951ba5b60" />
+
+
+<img width="1406" height="992" alt="image" src="https://github.com/user-attachments/assets/8e5af6fb-99f5-4406-bbbc-f0e951ba5b60" />
+
+
 1. **The Telemetry Engine (Invisible Background App):** A hyper-optimized, lightweight React Native app installed once. It operates silently in the background during active shifts, securely logging essential telemetry (GPS hex-grid location, accelerometer data, network state). It has almost zero UI and is designed to consume minimal battery, ensuring it doesn't interfere with the rider's primary apps or device performance. This data is crucial for validating claims and detecting fraud without any user interaction.
   
 2. **The Worker Frontend (WhatsApp Bot):** All actual user interaction happens on WhatsApp, an app the rider already trusts and keeps open. Through a Twilio/Meta API integration, the bot operates in local languages (Tamil/Tanglish). It handles Sunday premium quotes, UPI payment links, storm warnings, and instant payout receipts. 
@@ -151,6 +157,9 @@ Gig workers already run heavy, battery-draining navigation and delivery apps on 
 
 ## > 🇭‌🇴‌🇼‌ 🇹‌🇭‌🇪‌ 🇹‌🇷‌🇮‌🇬‌🇬‌🇪‌🇷‌🇸‌ 🇼‌🇴‌🇷‌🇰‌: 🇹‌🇭‌🇪‌ "🇩‌🇴‌🇺‌🇧‌🇱‌🇪‌-🇹‌🇷‌🇮‌🇬‌🇬‌🇪‌🇷‌" 🇱‌🇴‌🇬‌🇮‌🇨‌
 Standard parametric insurance fails in gig work because it uses basic logic: *If it rains, pay the worker.* But rain doesn't stop deliveries; **waterlogging and gridlock do.** GigaChad uses a composite index to ensure payouts are only triggered during genuine civic halts.
+
+<img width="1406" height="992" alt="image" src="https://github.com/user-attachments/assets/3f7d2e11-6a1c-401e-b1f6-76112bf2f2f5" />
+
 
 1. **Hex-Grid Mapping (Uber H3):** Chennai is divided into localized hexagonal nodes. Triggers only fire for the specific grid the rider is currently occupying, not the whole city.
 2. **The Double-Trigger System (Environmental):** Our smart contracts require two conditions to be met simultaneously:
@@ -174,7 +183,6 @@ GigaChad utilizes a **Dynamic Weekly Pricing Model**, powered by pre-trained Tim
 * **Dynamic Quotes:** If the upcoming week is clear, the bot offers a micro-premium of just **₹15**. If heavy monsoons are predicted, the premium intelligently scales up to **₹45**. 
 * **The Worker Benefit:** They never overpay during safe weeks. 
 * **The Insurer Benefit:** Premium pricing perfectly hedges against the calculated statistical risk of the week.
-* 
 
 > **Note on Dynamic Pricing:** *The premiums below represent a "Standard Risk" week. If the AI predicts a completely dry, disruption-free week, these prices dynamically drop by 40%. If a cyclone is predicted, the AI raises the premium to protect the insurer's liquidity pool.*
 
