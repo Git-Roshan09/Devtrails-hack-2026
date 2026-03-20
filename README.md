@@ -42,12 +42,14 @@ Chennai’s Quick-Commerce (Q-Commerce) delivery partners are the heartbeat of t
    Gig worker earnings are heavily gamified. A significant portion of their daily take-home pay comes from "Daily Target Bonuses" (e.g., Complete 20 orders for an extra ₹400). When an external event strikes during peak hours, a worker doesn't just lose 2 hours of wages; they lose the entire bonus they worked 10 hours to achieve.
 
 4. **Insurance Misalignment** : 
-   Existing insurance products for gig workers focus on vehicle repair, health, or accidents. There is zero protection for "Lost Opportunity Cost." When the city shuts down due to a cyclone, a strike, or a VVIP traffic block, the worker loses 100% of their potential income for that period, with no way to recover it.
+   Existing insurance products of **Zepto** for gig workers focus on vehicle repair, health, or accidents. There is zero protection for "Lost Opportunity Cost." When the city shuts down due to a cyclone, a strike, or a VVIP traffic block, the worker loses 100% of their potential income for that period, with no way to recover it.
+
+5. **Barrier** : It’s regrettable that Zomato, Swiggy, Zepto, Uber etc will now have to deduct 5% of commissions paid to delivery/driver folks and pay that to the state Govt as insurance premium. This is a great step forward for the gig economy, but it also means that the insurance product must be robust, frictionless, and truly aligned with the unique risks these workers face. GigaChad is designed to fill this critical gap, providing a much-needed financial shield for Chennai’s gig workforce. [REFER](https://www.linkedin.com/posts/jshilanjanm_its-regrettable-that-zomato-swiggy-zepto-activity-7313777872043708418-o-hu/)
 
 --- 
 
 ## > 🇹‌🇭‌🇪‌ 🇸‌🇴‌🇱‌🇺‌🇹‌🇮‌🇴‌🇳‌: 🇬‌🇮‌🇬‌🇦‌🇨‌🇭‌🇦‌🇩‌
-- GigaChad is a zero-touch, AI-powered parametric micro-insurance platform built specifically to protect Chennai’s Quick-Commerce (Zepto/Blinkit) delivery partners from immediate income loss caused by localized external disruptions. Recognizing that gig workers operate on tight weekly cash flows and suffer from "app fatigue," the platform uses a dual-interface approach: a lightweight background telemetry app for secure data logging and a multilingual WhatsApp Bot for all user interactions, from policy opt-ins to instant payout notifications.
+- GigaChad is a zero-touch, AI-powered parametric micro-insurance platform built specifically to protect Chennai’s Quick-Commerce Zepto delivery partners from immediate income loss caused by localized external disruptions. Recognizing that gig workers operate on tight weekly cash flows and suffer from "app fatigue," the platform uses a dual-interface approach: a lightweight background telemetry app for secure data logging and a multilingual WhatsApp Bot for all user interactions, from policy opt-ins to instant payout notifications.
 
 - Unlike traditional insurance that relies on reactive, manual claims, GigaChad is entirely proactive and automated. Every Sunday, our Time-Series AI engine analyzes the upcoming week’s hyper-local forecast (weather, traffic, and civic events) to offer a fair, dynamic weekly premium via UPI. If a disruption occurs—such as severe waterlogging in Velachery or a sudden VVIP traffic gridlock—the system’s Double-Trigger logic cross-references external APIs (OpenWeather, TomTom) with the rider's live telemetry. Once the disruption is validated, the smart contract automatically calculates the wages lost during the idle hours and instantly credits the rider's bank account, requiring zero claim forms or manual intervention.
 
@@ -59,7 +61,7 @@ Chennai’s Quick-Commerce (Q-Commerce) delivery partners are the heartbeat of t
 
 To build a product that actually works in the real world, we cannot design for a generic "gig worker." We must design for a highly specific reality. 
 
-Meet **Hari**, our target persona. He is a 24-year-old Quick-Commerce (Zepto/Blinkit) delivery partner operating in the Velachery / OMR micro-market in Chennai.
+Meet **Hari**, our target persona. He is a 24-year-old Quick-Commerce Zepto delivery partner operating in the Velachery / OMR micro-market in Chennai.
 
 ---
 
@@ -67,7 +69,7 @@ Meet **Hari**, our target persona. He is a 24-year-old Quick-Commerce (Zepto/Bli
 
 | Attribute | Reality for Hari |
 | :--- | :--- |
-| **Primary Platforms** | Zepto, Blinkit, Swiggy Instamart |
+| **Primary Platforms** | Zepto |
 | **Operational Radius** | Hyper-local: 2 to 3 km around a specific "Dark Store" |
 | **Delivery SLA** | 10 to 15 minutes per order |
 | **Average Earnings** | ₹800 - ₹1,200 per day (Depends heavily on completing targets) |
@@ -91,6 +93,7 @@ Hari is exposed to uniquely Indian, hyper-local disruptions that traditional ins
 2. **VVIP Movement & Rallies (Infrastructure):** Chennai traffic police frequently barricade arterial roads (like OMR or Mount Road) for political convoys. Hari is physically ready to work, but trapped in a 1-hour gridlock, destroying his hourly delivery targets.
 3. **Local Bandhs & Strikes (Social):** Auto-rickshaw union strikes or local protests force shops and dark stores to pull their shutters down for safety. Hari loses an entire day of wages through no fault of his own.
 4. **Digital Blackouts (Technological):** When the Zepto AWS server crashes globally, or local authorities suspend 4G internet to control a protest, Hari is digitally paralyzed on the side of the road.
+5. **unsual petrol price hike (Economic):** A sudden spike in fuel prices can make it economically unviable for Hari to continue working, especially if his earnings are already thin. This is an external economic factor that can lead to a loss of income.
 
 ---
 
@@ -130,7 +133,7 @@ To balance robust data tracking with gig-worker "app fatigue," GigaChad uses a d
 
 ## > 🇦‌🇵‌🇵‌🇱‌🇮‌🇨‌🇦‌🇹‌🇮‌🇴‌🇳‌ 🇼‌🇴‌🇷‌🇰‌🇫‌🇱‌🇴‌🇼‌
 1. **Sunday Setup (Opt-In):** The rider receives a WhatsApp message with their dynamic weekly premium quote for the upcoming week. They accept and pay via a 1-click UPI link.
-2. **Shift Tracking:** The rider starts their Zepto/Blinkit shift. The GigaChad background app begins logging telemetry data (location, movement, connectivity) securely.
+2. **Shift Tracking:** The rider starts their Zepto shift. The GigaChad background app begins logging telemetry data (location, movement, connectivity) securely.
 3. **Disruption Detected:** A sudden cloudburst hits Velachery. Our backend APIs trigger a "Severe Disruption" flag for that specific hex-grid.
 4. **Zero-Touch Auto-Claim:** Our backend verifies the rider's telemetry, confirming they are trapped in Velachery. The system calculates the estimated lost income for the idle hours.
 5. **Instant Payout:** The smart contract automatically executes, and the rider receives a WhatsApp alert: *"₹250 credited to your UPI for 2 hours of lost wages due to Velachery waterlogging."*
@@ -140,7 +143,8 @@ To balance robust data tracking with gig-worker "app fatigue," GigaChad uses a d
 ## > 🇦‌🇧‌🇴‌🇺‌🇹‌ 🇹‌🇭‌🇪‌ 🇦‌🇵‌🇵‌: 🇹‌🇭‌🇪‌ 🇩‌🇺‌🇦‌🇱‌-🇮‌🇳‌🇹‌🇪‌🇷‌🇫‌🇦‌🇨‌🇪‌ 🇦‌🇷‌🇨‌🇭‌🇮‌🇹‌🇪‌🇨‌🇹‌🇺‌🇷‌🇪‌
 Gig workers already run heavy, battery-draining navigation and delivery apps on budget smartphones. Forcing them to install another heavy insurance portal leads to instant uninstalls. GigaChad solves "App Fatigue" by splitting the architecture into two distinct layers:
 
-1. **The Telemetry Engine (Invisible Background App):** A hyper-optimized, lightweight React Native app installed once. It operates silently in the background during active shifts, securely logging essential telemetry (GPS hex-grid location, accelerometer data, network state). It has almost zero UI—it simply acts as the "source of truth."
+1. **The Telemetry Engine (Invisible Background App):** A hyper-optimized, lightweight React Native app installed once. It operates silently in the background during active shifts, securely logging essential telemetry (GPS hex-grid location, accelerometer data, network state). It has almost zero UI and is designed to consume minimal battery, ensuring it doesn't interfere with the rider's primary apps or device performance. This data is crucial for validating claims and detecting fraud without any user interaction.
+  
 2. **The Worker Frontend (WhatsApp Bot):** All actual user interaction happens on WhatsApp, an app the rider already trusts and keeps open. Through a Twilio/Meta API integration, the bot operates in local languages (Tamil/Tanglish). It handles Sunday premium quotes, UPI payment links, storm warnings, and instant payout receipts. 
 
 ---
@@ -176,13 +180,13 @@ GigaChad utilizes a **Dynamic Weekly Pricing Model**, powered by pre-trained Tim
 
 | Tier | Weekly Premium | Coverage / Payout Cap | Target User |
 | :--- | :--- | :--- | :--- |
-| **🥉 Shield Basic** | **₹19** / week | **₹300 per event** *(Covers ~3 hours of lost base wages)* | Part-time riders who only work peak evening shifts (7 PM - 11 PM). |
-| **🥈 Shield Plus** | **₹39** / week | **₹600 per event** *(Covers half-day of lost wages + minor missed incentives)* | Standard full-time riders operating 8-10 hour shifts. |
-| **🥇 Shield Pro** | **₹59** / week | **₹1,000 per event** *(Covers full-day income loss + daily milestone bonuses)* | Power-riders working 14-hour shifts who rely heavily on daily completion bonuses. |
+| **🥉 Giga Basic** | **₹19** / week | **₹300 per event** *(Covers ~3 hours of lost base wages)* | Part-time riders who only work peak evening shifts (7 PM - 11 PM). |
+| **🥈 Giga Plus** | **₹39** / week | **₹600 per event** *(Covers half-day of lost wages + minor missed incentives)* | Standard full-time riders operating 8-10 hour shifts. |
+| **🥇 Giga Pro** | **₹59** / week | **₹1,000 per event** *(Covers full-day income loss + daily milestone bonuses)* | Power-riders working 14-hour shifts who rely heavily on daily completion bonuses. |
 
 ---
 
-### 💸 🇭‌🇴‌🇼‌ 🇹‌🇭‌🇪‌ 🇵‌🇦‌🇾‌🇴‌🇺‌🇹‌ 🇲‌🇦‌🇹‌🇭‌ 🇼‌🇴‌🇷‌🇰‌🇸‌ (🇪‌🇽‌🇦‌🇲‌🇵‌🇱‌🇪‌: 🇸‌🇭‌🇮‌🇪‌🇱‌🇩‌ 🇵‌🇱‌🇺‌🇸‌)
+### 💸 🇭‌🇴‌🇼‌ 🇹‌🇭‌🇪‌ 🇵‌🇦‌🇾‌🇴‌🇺‌🇹‌ 🇲‌🇦‌🇹‌🇭‌ 🇼‌🇴‌🇷‌🇰‌🇸‌ (🇪‌🇽‌🇦‌🇲‌🇵‌🇱‌🇪‌: Giga 🇵‌🇱‌🇺‌🇸‌)
 Our system strictly ensures payouts correlate with **actual lost working hours**, adhering to the hackathon's "Loss of Income Only" constraint. 
 
 1. **The Baseline:** Hari is subscribed to the **Shield Plus** tier. Our system's historical data shows he averages ₹100/hour during evening shifts.
@@ -242,7 +246,7 @@ A fully automated parametric system is highly vulnerable to GPS spoofing. If we 
 
 ---
 
-## ✨ 🇸‌🇵‌🇪‌🇨‌🇮‌🇦‌🇱‌ 🇫‌🇪‌🇦‌🇹‌🇺‌🇷‌🇪‌🇸‌ (🇴‌🇺‌🇷‌ 🇭‌🇦‌🇨‌🇰‌🇦‌🇹‌🇭‌🇴‌🇳‌ 🇩‌🇮‌🇫‌🇫‌🇪‌🇷‌🇪‌🇳‌🇹‌🇮‌🇦‌🇹‌🇴‌🇷‌🇸‌)
+## ✨ 🇸‌🇵‌🇪‌🇨‌🇮‌🇦‌🇱‌ 🇫‌🇪‌🇦‌🇹‌🇺‌🇷‌🇪‌🇸 
 * **The Double-Trigger System:** Rain alone doesn't stop deliveries; waterlogging does. Our system requires a Double-Trigger: `(Rain > 30mm)` **AND** `(Traffic Speed < 5 km/h)`. This protects the insurer from paying out for harmless weather.
 * **Digital Blackout Coverage:** India frequently experiences localized internet shutdowns or gig platform server crashes. GigaChad monitors Cloudflare Radar and Downdetector; if a rider is willing to work but the digital infrastructure fails, they get paid.
 * **Predictive Earnings Copilot:** Before a storm hits, the WhatsApp bot proactively messages the rider: *"Warning: Heavy rain predicted in T. Nagar in 30 mins. Move to Alwarpet to maintain your earnings stream. If you stay, your income protection is active."*
