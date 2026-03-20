@@ -202,7 +202,7 @@ Our system strictly ensures payouts correlate with **actual lost working hours**
 ---
 
 ## 🧠 🇦‌🇮‌/🇲‌🇱‌ 🇮‌🇳‌🇹‌🇪‌🇬‌🇷‌🇦‌🇹‌🇮‌🇴‌🇳‌ 🇦‌🇷‌🇨‌🇭‌🇮‌🇹‌🇪‌🇨‌🇹‌🇺‌🇷‌🇪‌
-Instead of relying on legacy ML like SARIMA, we built GigaChad using state-of-the-art **Pre-Trained Foundation Models** to handle risk, NLP, and graph anomalies with zero-shot capabilities:
+Instead of relying on legacy ML, we build GigaChad using state-of-the-art **Pre-Trained Foundation Models** to handle risk, NLP, and graph anomalies with zero-shot capabilities:
 
 1. **Actuarial Risk & Premium Engine (Time-Series Foundation Models):** 
    * **Model:** **Amazon Chronos (T5-based)** / **TimeGPT (Nixtla)**
