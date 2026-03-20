@@ -23,12 +23,9 @@
 
   <hr>
 </div>
-
-# 🛡️ GigaChad: AI-Powered Parametric Income Protection for Q-Commerce
-
 ---
 
-## 💡 Inspiration
+## Inspiration
 
 Chennai is a fast-paced metropolis driven by a massive Q-Commerce economy (Zepto, Blinkit, Swiggy Instamart). Delivery partners working the busy corridors of OMR, Velachery, or T. Nagar operate in high-pressure 10-minute delivery windows. When sudden disruptions hit—like severe waterlogging during the Northeast Monsoon, unannounced political rallies causing VVIP gridlock, or local strikes—their earnings are instantly paralyzed. 
 
