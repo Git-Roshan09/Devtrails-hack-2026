@@ -1,22 +1,53 @@
+# ── Core Framework ──────────────────────────────────
 fastapi==0.111.0
 uvicorn[standard]==0.29.0
+pydantic==2.7.1
+pydantic-settings==2.2.1
+python-dotenv==1.0.1
+
+# ── Database & Caching ──────────────────────────────
 asyncpg==0.29.0
 sqlalchemy[asyncio]==2.0.30
 alembic==1.13.1
-pydantic==2.7.1
-pydantic-settings==2.2.1
 redis==5.0.4
 neo4j==5.20.0
+firebase-admin==6.5.0
+supabase==2.4.5
+
+# ── AI & Agentic Framework ──────────────────────────
+crewai==0.30.11
+crewai-tools==0.2.6
+langchain==0.2.0
+langchain-groq==0.1.3
+groq==0.8.0
+sentence-transformers==2.7.0
+
+# ── News Scraping & Web Extraction ──────────────────
+crawl4ai==0.2.77
+newspaper3k==0.2.8
+beautifulsoup4==4.12.3
+lxml==5.2.2
+feedparser==6.0.11
+tweepy==4.14.0
+
+# ── Weather & External APIs ─────────────────────────
 httpx==0.27.0
 h3==3.7.7
-groq==0.8.0
+
+# ── Background Tasks & Scheduling ───────────────────
+celery[redis]==5.4.0
+celery-redbeat==2.2.0
+apscheduler==3.10.4
+
+# ── Payments & Notifications ────────────────────────
 razorpay==1.4.1
 twilio==9.1.0
-python-dotenv==1.0.1
+
+# ── Data Processing ─────────────────────────────────
+pandas==2.2.2
+numpy==1.26.4
+
+# ── Testing ─────────────────────────────────────────
 pytest==8.2.0
 pytest-asyncio==0.23.6
 faker==24.11.0
-pandas==2.2.2
-numpy==1.26.4
-firebase-admin==6.5.0
-supabase==2.4.5

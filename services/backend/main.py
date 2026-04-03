@@ -6,6 +6,7 @@ import asyncio
 from database import engine, Base
 from config import get_settings
 from api import riders, policies, telemetry, disruptions, claims, admin, auth
+from api import payouts, monitoring
 
 settings = get_settings()
 
@@ -45,6 +46,8 @@ app.include_router(telemetry.router,   prefix="/api/telemetry",   tags=["Telemet
 app.include_router(disruptions.router, prefix="/api/disruptions", tags=["Disruptions"])
 app.include_router(claims.router,      prefix="/api/claims",      tags=["Claims"])
 app.include_router(admin.router,       prefix="/api/admin",       tags=["Admin"])
+app.include_router(payouts.router)  # Has own prefix /api/payouts
+app.include_router(monitoring.router)  # Has own prefix /api/monitoring
 
 
 @app.get("/", tags=["Health"])

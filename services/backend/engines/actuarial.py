@@ -1,8 +1,13 @@
 """
 AI Actuarial Engine — Dynamic Weekly Premium Pricing
 ──────────────────────────────────────────────────────
-Uses Nixtla TimeGPT (or fallback heuristic) to forecast disruption risk
-for the upcoming week and compute dynamic premiums for each tier.
+Uses real-time weather forecasts, news sentiment, and TimeGPT
+to compute dynamic premiums for each tier.
+
+Data Sources:
+  - engines/risk_aggregator → 7-day weather + news risk
+  - Nixtla TimeGPT → Time-series forecasting (optional)
+  - Calendar heuristics → Monsoon seasonality (fallback)
 
 Premium Ranges:
   Giga Basic: ₹15–₹25
@@ -32,9 +37,15 @@ PREMIUM_BOUNDS = {
 async def compute_weekly_premium(week_start: date) -> dict:
     """
     Compute the AI-driven premium for the given week.
-    Tries TimeGPT first, falls back to heuristic if API key is missing.
+    
+    Pipeline:
+    1. Fetch real weather forecast (7-day) from risk_aggregator
+    2. Check news for predicted disruptions
+    3. Apply TimeGPT for time-series smoothing (optional)
+    4. Fall back to heuristic if APIs unavailable
     """
-    risk_score, forecast_json = await _forecast_risk(week_start)
+    risk_data = await _get_comprehensive_risk(week_start)
+    risk_score = risk_data["risk_score"]
     premiums = _risk_to_premiums(risk_score)
 
     return {
@@ -43,7 +54,71 @@ async def compute_weekly_premium(week_start: date) -> dict:
         "basic_premium": premiums["basic"],
         "plus_premium": premiums["plus"],
         "pro_premium": premiums["pro"],
-        "forecast_json": forecast_json,
+        "forecast_json": risk_data.get("forecast", {}),
+        "risk_factors": risk_data.get("factors", []),
+        "data_sources": risk_data.get("sources", []),
+    }
+
+
+async def _get_comprehensive_risk(week_start: date) -> dict:
+    """
+    Get comprehensive risk score using all available data sources.
+    Combines weather forecasts, news signals, and historical patterns.
+    """
+    sources = []
+    factors = []
+    scores = []
+    
+    # ─── Source 1: Real-time risk aggregator (weather + news) ───
+    try:
+        from engines.risk_aggregator import calculate_weekly_risk_score
+        real_risk = await calculate_weekly_risk_score()
+        
+        if real_risk:
+            scores.append(("real_data", real_risk["risk_score"], 0.5))  # 50% weight
+            sources.append("real_time_weather_news")
+            factors.extend(real_risk.get("risk_factors", []))
+    except Exception as e:
+        print(f"⚠️  Real-time risk unavailable: {e}")
+    
+    # ─── Source 2: TimeGPT forecast ───
+    if settings.nixtla_api_key:
+        try:
+            timegpt_score, forecast = await _timegpt_forecast(week_start)
+            scores.append(("timegpt", timegpt_score, 0.3))  # 30% weight
+            sources.append("timegpt_forecast")
+        except Exception as e:
+            print(f"⚠️  TimeGPT unavailable: {e}")
+    
+    # ─── Source 3: Calendar heuristic (always available) ───
+    heuristic_score = _heuristic_risk(week_start)
+    sources.append("calendar_heuristic")
+    
+    # ─── Combine scores ───
+    if scores:
+        # Weighted average of available sources
+        total_weight = sum(w for _, _, w in scores)
+        remaining_weight = 1.0 - total_weight
+        scores.append(("heuristic", heuristic_score, max(0.2, remaining_weight)))
+        
+        weighted_sum = sum(score * weight for _, score, weight in scores)
+        total_weight = sum(weight for _, _, weight in scores)
+        final_score = weighted_sum / total_weight
+    else:
+        final_score = heuristic_score
+    
+    # Add seasonal factor descriptions
+    month = week_start.month
+    if month in [10, 11, 12]:
+        factors.append(f"Northeast Monsoon season (month {month})")
+    elif month in [6, 7, 8, 9]:
+        factors.append(f"Southwest Monsoon season (month {month})")
+    
+    return {
+        "risk_score": round(min(max(final_score, 0.0), 1.0), 4),
+        "factors": factors[:10],  # Limit to top 10 factors
+        "sources": sources,
+        "forecast": {},
     }
 
 
