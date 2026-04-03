@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "GigaChad",
+    "slug": "gigachad-telemetry",
+    "version": "1.0.0",
+    "sdkVersion": "54.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0a0a0a",
+    "android": {
+      "package": "in.gigachad.telemetry",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION"
+      ]
+    },
+    "ios": {
+      "bundleIdentifier": "in.gigachad.telemetry",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "GigaChad needs your location to validate disruption claims and protect your income.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "GigaChad tracks your location during active shifts to automatically process income protection claims.",
+        "UIBackgroundModes": ["location", "fetch"]
+      }
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "GigaChad uses your location to verify disruption claims and protect your income.",
+          "locationAlwaysPermission": "GigaChad tracks location during shifts to auto-process claims.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ]
+    ]
+  }
+}

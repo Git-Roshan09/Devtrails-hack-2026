@@ -1,0 +1,81 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: gigachad_postgres
+    environment:
+      POSTGRES_USER: gigachad
+      POSTGRES_PASSWORD: gigachad_secret
+      POSTGRES_DB: gigachad_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./services/backend/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  redis:
+    image: redis:7-alpine
+    container_name: gigachad_redis
+    ports:
+      - "6379:6379"
+
+  neo4j:
+    image: neo4j:5-community
+    container_name: gigachad_neo4j
+    environment:
+      NEO4J_AUTH: neo4j/gigachad_neo4j
+      NEO4J_PLUGINS: '["apoc"]'
+    ports:
+      - "7474:7474"   # Browser UI
+      - "7687:7687"   # Bolt
+    volumes:
+      - neo4j_data:/data
+
+  backend:
+    build:
+      context: ./services/backend
+      dockerfile: Dockerfile
+    container_name: gigachad_backend
+    env_file: ./services/backend/.env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+      - neo4j
+    volumes:
+      - ./services/backend:/app
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  whatsapp_bot:
+    build:
+      context: ./apps/whatsapp-bot
+      dockerfile: Dockerfile
+    container_name: gigachad_whatsapp
+    env_file: ./apps/whatsapp-bot/.env
+    ports:
+      - "3001:3001"
+    depends_on:
+      - backend
+    volumes:
+      - ./apps/whatsapp-bot:/app
+    command: node index.js
+
+  dashboard:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile
+    container_name: gigachad_dashboard
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    volumes:
+      - ./dashboard:/app
+      - /app/node_modules
+    command: npm run dev
+
+volumes:
+  postgres_data:
+  neo4j_data:
