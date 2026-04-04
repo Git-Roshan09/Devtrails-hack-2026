@@ -71,6 +71,15 @@ class Rider(Base):
     home_wifi_ssid = Column(String(100))
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # KYC Fields
+    aadhar_verified = Column(Boolean, default=False)
+    masked_aadhar = Column(String(20))  # XXXX-XXXX-1234
+    upi_verified = Column(Boolean, default=False)
+    upi_verification_code = Column(String(10))  # Temp code for verification
+    pan_verified = Column(Boolean, default=False)
+    pan_number = Column(String(15))  # Masked: ABCDEXXXX9F
+    kyc_verified_at = Column(DateTime(timezone=True))
 
     policies = relationship("Policy", back_populates="rider")
     telemetry_logs = relationship("TelemetryLog", back_populates="rider")

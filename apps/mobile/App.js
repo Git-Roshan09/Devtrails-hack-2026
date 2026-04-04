@@ -2,27 +2,34 @@
  * GigaChad Telemetry App
  * ──────────────────────
  * Expo Go compatible — no custom native build needed.
- * Sends GPS to the GigaChad backend every 30 seconds.
- * Continues in background via expo-task-manager.
+ * Features:
+ * - GPS tracking (real or simulated)
+ * - Claims history with status
+ * - Video appeal for soft-flagged claims
+ * - Tab navigation
  */
 
 import * as TaskManager from "expo-task-manager";
 import * as Location from "expo-location";
-import React, { useState, useEffect, useRef } from "react";
+import * as ImagePicker from "expo-image-picker";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   StyleSheet,
   View,
   Text,
   TouchableOpacity,
   ScrollView,
+  FlatList,
   Platform,
   Alert,
   StatusBar,
   Animated,
   SafeAreaView,
   TextInput,
+  Modal,
+  RefreshControl,
 } from "react-native";
-import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from "firebase/auth";
+import { signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "./firebase";
 
 
@@ -94,18 +101,27 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [dbRiderId, setDbRiderId] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("tracking"); // "tracking" or "claims"
 
   // Login form state
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
 
+  // Tracking state
   const [isTracking, setIsTracking] = useState(false);
   const [useFakeGps, setUseFakeGps] = useState(true);
   const [selectedZone, setSelectedZone] = useState("Velachery");
   const [lastPing, setLastPing] = useState(null);
   const [pingCount, setPingCount] = useState(0);
   const [status, setStatus] = useState("idle");
+
+  // Claims state
+  const [claims, setClaims] = useState([]);
+  const [claimsLoading, setClaimsLoading] = useState(false);
+  const [claimsRefreshing, setClaimsRefreshing] = useState(false);
+  const [selectedClaim, setSelectedClaim] = useState(null);
+  const [claimStats, setClaimStats] = useState({ total: 0, paid: 0, pending: 0 });
   const [currentCoords, setCurrentCoords] = useState(null);
 
   const fakeInterval = useRef(null);
@@ -142,6 +158,96 @@ export default function App() {
       await signInWithEmailAndPassword(auth, email, password);
     } catch(err) {
       setLoginError("Invalid credentials");
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      Alert.alert("Email Required", "Please enter your email address first.");
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      Alert.alert("Password Reset", "A password reset link has been sent to your email.", [{ text: "OK" }]);
+    } catch(err) {
+      if (err.code === "auth/user-not-found") {
+        Alert.alert("Error", "No account found with this email.");
+      } else {
+        Alert.alert("Error", "Failed to send reset email. Try again.");
+      }
+    }
+  };
+
+  // ─── CLAIMS FUNCTIONS ─────────────────────────────────────────
+  const fetchClaims = useCallback(async () => {
+    if (!dbRiderId) return;
+    setClaimsLoading(true);
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/claims/rider/${dbRiderId}`, {
+        headers: { "Bypass-Tunnel-Reminder": "true" },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setClaims(data);
+        
+        const totalPaid = data
+          .filter((c) => c.status === "paid")
+          .reduce((sum, c) => sum + (c.total_payout || 0), 0);
+        const pendingCount = data.filter(
+          (c) => c.status === "pending" || c.status === "approved"
+        ).length;
+        
+        setClaimStats({ total: data.length, paid: totalPaid, pending: pendingCount });
+      }
+    } catch (e) {
+      console.error("Failed to fetch claims:", e);
+    } finally {
+      setClaimsLoading(false);
+      setClaimsRefreshing(false);
+    }
+  }, [dbRiderId]);
+
+  useEffect(() => {
+    if (activeTab === "claims" && dbRiderId) {
+      fetchClaims();
+    }
+  }, [activeTab, dbRiderId, fetchClaims]);
+
+  const handleVideoAppeal = async (claim) => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission Required", "We need access to your photos to upload the appeal video.");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+      allowsEditing: true,
+      quality: 0.5,
+      videoMaxDuration: 15,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      Alert.alert("Uploading Video", "Your appeal video is being uploaded. You'll receive a WhatsApp notification once reviewed.", [{ text: "OK" }]);
+      
+      try {
+        const formData = new FormData();
+        formData.append("video", {
+          uri: result.assets[0].uri,
+          type: "video/mp4",
+          name: "appeal.mp4",
+        });
+
+        await fetch(`${BACKEND_URL}/api/claims/${claim.id}/appeal`, {
+          method: "POST",
+          headers: { "Content-Type": "multipart/form-data", "Bypass-Tunnel-Reminder": "true" },
+          body: formData,
+        });
+        Alert.alert("Success", "Appeal submitted! We'll review within 2 hours.");
+        fetchClaims();
+      } catch (e) {
+        Alert.alert("Error", "Failed to upload video. Please try WhatsApp.");
+      }
     }
   };
 
@@ -286,25 +392,19 @@ export default function App() {
           <TouchableOpacity style={s.ctaBtn} onPress={handleLogin}>
             <Text style={s.ctaTxt}>SIGN IN</Text>
           </TouchableOpacity>
+          <TouchableOpacity onPress={handleForgotPassword} style={{marginTop: 12, alignItems: 'center'}}>
+            <Text style={{color: '#888', fontSize: 13}}>Forgot Password?</Text>
+          </TouchableOpacity>
         </View>
         <Text style={s.info}>* If you haven't registered, create an account on the GigaChad Web Platform first.</Text>
       </SafeAreaView>
     );
   }
 
-  return (
-    <SafeAreaView style={s.safe}>
-      <StatusBar barStyle="light-content" backgroundColor="#000" />
+  // ─── TRACKING SCREEN ───────────────────────────────────────────
+  const renderTrackingScreen = () => {
+    return (
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
-
-        {/* ── Header ─────────────────────────── */}
-        <View style={s.header}>
-          <TouchableOpacity onPress={() => signOut(auth)} style={{position: 'absolute', right: 0, top: 15, zIndex: 10}}>
-             <Text style={{color: '#f44336', fontSize: 12}}>Logout</Text>
-          </TouchableOpacity>
-          <Text style={s.logo}>⚡ GigaChad</Text>
-          <Text style={s.sub}>Income Shield · Telemetry</Text>
-        </View>
 
         {/* ── Status Pill ────────────────────── */}
         <View style={[s.pill, { borderColor: statusColor + "55" }]}>
@@ -394,6 +494,147 @@ export default function App() {
         </Text>
 
       </ScrollView>
+    );
+  };
+
+  // ─── CLAIMS SCREEN ─────────────────────────────────────────────
+  const STATUS_COLORS = {
+    pending: { bg: "#FFA500", text: "#000" },
+    approved: { bg: "#00e676", text: "#000" },
+    soft_flagged: { bg: "#FF6B6B", text: "#fff" },
+    denied: { bg: "#f44336", text: "#fff" },
+    paid: { bg: "#4CAF50", text: "#fff" },
+  };
+  const STATUS_EMOJI = { pending: "⏳", approved: "✅", soft_flagged: "🚩", denied: "❌", paid: "💰" };
+
+  const renderClaimItem = ({ item }) => {
+    const statusStyle = STATUS_COLORS[item.status] || STATUS_COLORS.pending;
+    const emoji = STATUS_EMOJI[item.status] || "•";
+    const date = new Date(item.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+
+    return (
+      <TouchableOpacity style={s.claimCard} onPress={() => setSelectedClaim(item)} activeOpacity={0.7}>
+        <View style={s.claimHeader}>
+          <Text style={s.claimDate}>{date}</Text>
+          <View style={[s.statusBadge, { backgroundColor: statusStyle.bg }]}>
+            <Text style={[s.statusText, { color: statusStyle.text }]}>{emoji} {item.status.replace("_", " ").toUpperCase()}</Text>
+          </View>
+        </View>
+        <View style={s.claimBody}>
+          <Text style={s.claimZone}>📍 {item.zone || item.disruption_type || "Chennai"}</Text>
+          <Text style={s.claimAmount}>₹{item.total_payout?.toFixed(0) || 0}</Text>
+        </View>
+        <View style={s.claimFooter}>
+          <Text style={s.claimType}>{item.disruption_type === "flood" ? "🌊" : "🚧"} {item.disruption_type?.replace("_", " ") || "Disruption"}</Text>
+          <Text style={s.claimHours}>⏱️ {item.idle_hours?.toFixed(1) || 0}h idle</Text>
+        </View>
+        {item.status === "soft_flagged" && (
+          <TouchableOpacity style={s.appealBtn} onPress={() => handleVideoAppeal(item)}>
+            <Text style={s.appealBtnText}>📹 Submit Video Appeal</Text>
+          </TouchableOpacity>
+        )}
+      </TouchableOpacity>
+    );
+  };
+
+  const renderClaimsScreen = () => (
+    <View style={{ flex: 1 }}>
+      {/* Stats Cards */}
+      <View style={s.statsRow}>
+        <View style={s.statCard}>
+          <Text style={s.statValue}>₹{claimStats.paid.toFixed(0)}</Text>
+          <Text style={s.statLabel}>Total Received</Text>
+        </View>
+        <View style={s.statCard}>
+          <Text style={s.statValue}>{claimStats.total}</Text>
+          <Text style={s.statLabel}>Total Claims</Text>
+        </View>
+        <View style={s.statCard}>
+          <Text style={[s.statValue, { color: "#FFA500" }]}>{claimStats.pending}</Text>
+          <Text style={s.statLabel}>Pending</Text>
+        </View>
+      </View>
+
+      {/* Claims List */}
+      <FlatList
+        data={claims}
+        keyExtractor={(item) => item.id}
+        renderItem={renderClaimItem}
+        contentContainerStyle={s.listContent}
+        ListEmptyComponent={!claimsLoading && (
+          <View style={s.emptyState}>
+            <Text style={s.emptyEmoji}>🛡️</Text>
+            <Text style={s.emptyTitle}>No Claims Yet</Text>
+            <Text style={s.emptyText}>When you're affected by a disruption, your claim will appear here automatically!</Text>
+          </View>
+        )}
+        refreshControl={
+          <RefreshControl refreshing={claimsRefreshing} onRefresh={() => { setClaimsRefreshing(true); fetchClaims(); }} tintColor="#00e676" />
+        }
+      />
+
+      {/* Claim Detail Modal */}
+      <Modal visible={!!selectedClaim} animationType="slide" transparent onRequestClose={() => setSelectedClaim(null)}>
+        {selectedClaim && (
+          <View style={s.modalOverlay}>
+            <View style={s.modalContent}>
+              <View style={s.modalHeader}>
+                <Text style={s.modalTitle}>Claim Details</Text>
+                <TouchableOpacity onPress={() => setSelectedClaim(null)}><Text style={s.modalClose}>✕</Text></TouchableOpacity>
+              </View>
+              <View style={s.modalBody}>
+                <View style={s.detailRow}><Text style={s.detailLabel}>Status</Text>
+                  <View style={[s.statusBadge, { backgroundColor: STATUS_COLORS[selectedClaim.status]?.bg || "#555" }]}>
+                    <Text style={{ color: STATUS_COLORS[selectedClaim.status]?.text || "#fff", fontWeight: "700" }}>{STATUS_EMOJI[selectedClaim.status]} {selectedClaim.status.toUpperCase()}</Text>
+                  </View>
+                </View>
+                <View style={s.detailRow}><Text style={s.detailLabel}>Payout Amount</Text><Text style={s.detailValue}>₹{selectedClaim.total_payout?.toFixed(0) || 0}</Text></View>
+                <View style={s.detailRow}><Text style={s.detailLabel}>Idle Hours</Text><Text style={s.detailValue}>{selectedClaim.idle_hours?.toFixed(1) || 0} hours</Text></View>
+                <View style={s.detailRow}><Text style={s.detailLabel}>Fraud Score</Text><Text style={[s.detailValue, { color: selectedClaim.fraud_score > 0.5 ? "#FF6B6B" : "#00e676" }]}>{((1 - (selectedClaim.fraud_score || 0)) * 100).toFixed(0)}% trustworthy</Text></View>
+                <View style={s.detailRow}><Text style={s.detailLabel}>Created</Text><Text style={s.detailValue}>{new Date(selectedClaim.created_at).toLocaleString("en-IN")}</Text></View>
+                {selectedClaim.razorpay_payout_id && <View style={s.detailRow}><Text style={s.detailLabel}>Payout ID</Text><Text style={[s.detailValue, { fontSize: 11 }]}>{selectedClaim.razorpay_payout_id}</Text></View>}
+              </View>
+              {selectedClaim.status === "soft_flagged" && (
+                <TouchableOpacity style={[s.appealBtn, { marginTop: 15 }]} onPress={() => { setSelectedClaim(null); handleVideoAppeal(selectedClaim); }}>
+                  <Text style={s.appealBtnText}>📹 Submit Video Appeal</Text>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity style={s.closeBtn} onPress={() => setSelectedClaim(null)}><Text style={s.closeBtnText}>Close</Text></TouchableOpacity>
+            </View>
+          </View>
+        )}
+      </Modal>
+    </View>
+  );
+
+  // ─── MAIN RENDER ───────────────────────────────────────────────
+  return (
+    <SafeAreaView style={s.safe}>
+      <StatusBar barStyle="light-content" backgroundColor="#000" />
+      
+      {/* Header */}
+      <View style={s.header}>
+        <TouchableOpacity onPress={() => signOut(auth)} style={{position: 'absolute', right: 16, top: 12, zIndex: 10}}>
+          <Text style={{color: '#f44336', fontSize: 12}}>Logout</Text>
+        </TouchableOpacity>
+        <Text style={s.logo}>⚡ GigaChad</Text>
+        <Text style={s.sub}>{activeTab === "tracking" ? "Income Shield · Telemetry" : "My Claims"}</Text>
+      </View>
+
+      {/* Tab Content */}
+      {activeTab === "tracking" ? renderTrackingScreen() : renderClaimsScreen()}
+
+      {/* Bottom Tab Bar */}
+      <View style={s.tabBar}>
+        <TouchableOpacity style={[s.tabItem, activeTab === "tracking" && s.tabItemActive]} onPress={() => setActiveTab("tracking")}>
+          <Text style={s.tabIcon}>🛰️</Text>
+          <Text style={[s.tabLabel, activeTab === "tracking" && s.tabLabelActive]}>Tracking</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[s.tabItem, activeTab === "claims" && s.tabItemActive]} onPress={() => setActiveTab("claims")}>
+          <Text style={s.tabIcon}>📋</Text>
+          <Text style={[s.tabLabel, activeTab === "claims" && s.tabLabelActive]}>Claims</Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
@@ -503,5 +744,101 @@ const s = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-  }
+  },
+
+  // Tab Bar Styles
+  tabBar: {
+    flexDirection: "row",
+    backgroundColor: "#111",
+    borderTopWidth: 1,
+    borderTopColor: "#1e1e1e",
+    paddingBottom: Platform.OS === "ios" ? 20 : 10,
+    paddingTop: 10,
+  },
+  tabItem: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 8,
+  },
+  tabItemActive: {},
+  tabIcon: { fontSize: 20, marginBottom: 4 },
+  tabLabel: { fontSize: 11, color: "#555", fontWeight: "600" },
+  tabLabelActive: { color: "#00e676" },
+
+  // Claims Screen Styles
+  statsRow: { flexDirection: "row", paddingHorizontal: 12, paddingVertical: 12, gap: 8 },
+  statCard: {
+    flex: 1,
+    backgroundColor: "#111",
+    borderRadius: 12,
+    padding: 12,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#1e1e1e",
+  },
+  statValue: { color: "#00e676", fontSize: 18, fontWeight: "900" },
+  statLabel: { color: "#555", fontSize: 9, marginTop: 4, textTransform: "uppercase" },
+  listContent: { padding: 12, paddingBottom: 20 },
+  claimCard: {
+    backgroundColor: "#111",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#1e1e1e",
+  },
+  claimHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
+  claimDate: { color: "#555", fontSize: 12, fontWeight: "600" },
+  statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+  statusText: { fontSize: 9, fontWeight: "800" },
+  claimBody: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
+  claimZone: { color: "#fff", fontSize: 14, fontWeight: "600" },
+  claimAmount: { color: "#00e676", fontSize: 20, fontWeight: "900" },
+  claimFooter: { flexDirection: "row", gap: 16 },
+  claimType: { color: "#666", fontSize: 11 },
+  claimHours: { color: "#666", fontSize: 11 },
+  appealBtn: {
+    backgroundColor: "#FF6B6B",
+    borderRadius: 10,
+    paddingVertical: 10,
+    marginTop: 12,
+    alignItems: "center",
+  },
+  appealBtnText: { color: "#fff", fontWeight: "700", fontSize: 12 },
+  emptyState: { alignItems: "center", paddingTop: 50, paddingHorizontal: 40 },
+  emptyEmoji: { fontSize: 45, marginBottom: 14 },
+  emptyTitle: { color: "#fff", fontSize: 16, fontWeight: "700", marginBottom: 6 },
+  emptyText: { color: "#555", fontSize: 13, textAlign: "center", lineHeight: 18 },
+
+  // Modal Styles
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.85)", justifyContent: "flex-end" },
+  modalContent: {
+    backgroundColor: "#111",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    maxHeight: "75%",
+  },
+  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
+  modalTitle: { color: "#fff", fontSize: 16, fontWeight: "800" },
+  modalClose: { color: "#555", fontSize: 18, padding: 5 },
+  modalBody: { gap: 10 },
+  detailRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#1e1e1e",
+  },
+  detailLabel: { color: "#666", fontSize: 12 },
+  detailValue: { color: "#fff", fontSize: 13, fontWeight: "600" },
+  closeBtn: {
+    backgroundColor: "#1e1e1e",
+    borderRadius: 12,
+    paddingVertical: 14,
+    marginTop: 16,
+    alignItems: "center",
+  },
+  closeBtnText: { color: "#fff", fontWeight: "700" },
 });
