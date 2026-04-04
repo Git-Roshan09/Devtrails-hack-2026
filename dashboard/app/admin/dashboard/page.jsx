@@ -5,6 +5,7 @@ import { useAuth } from "../../AuthContext";
 import { useRouter } from "next/navigation";
 import { signOut } from "firebase/auth";
 import { auth } from "../../../firebase";
+import Image from "next/image";
 
 const Map = dynamic(() => import("../../../components/HexMap"), { ssr: false });
 
@@ -15,6 +16,7 @@ const ZONES = ["velachery", "omr", "t_nagar", "anna_nagar", "tambaram"];
 export default function Dashboard() {
   const { currentUser } = useAuth();
   const router = useRouter();
+  const [mockUser, setMockUser] = useState(null);
 
   const [stats, setStats] = useState(null);
   const [claims, setClaims] = useState([]);
@@ -24,14 +26,22 @@ export default function Dashboard() {
   const [selectedZone, setSelectedZone] = useState("velachery");
   const [toast, setToast] = useState(null);
 
+  // Check for mock user session
+  useEffect(() => {
+    const stored = sessionStorage.getItem("mockUser");
+    if (stored) {
+      setMockUser(JSON.parse(stored));
+    }
+  }, []);
+
   useEffect(() => {
     if (currentUser === undefined) return;
-    if (!currentUser) {
-      router.push("/");
+    // Allow access if either Firebase user or mock user exists
+    if (!currentUser && !mockUser) {
+      const stored = sessionStorage.getItem("mockUser");
+      if (!stored) router.push("/");
     }
-    // RBAC: Here you would normally fetch the user's role from your backend or JWT claims
-    // For Hackathon demo, we assume only admins reach here or we bounce them if API fails
-  }, [currentUser, router]);
+  }, [currentUser, mockUser, router]);
 
   const fetchAll = useCallback(async () => {
     try {
@@ -88,10 +98,21 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="text-[#00e676] text-2xl font-bold animate-pulse">⚡ Loading GigaChad Dashboard...</div>
+        <div className="flex items-center gap-3">
+          <Image src="/logo.png" alt="GigaChad" width={48} height={48} />
+          <div className="text-[#00e676] text-2xl font-bold animate-pulse">Loading GigaChad Dashboard...</div>
+        </div>
       </div>
     );
   }
+
+  const handleLogout = async () => {
+    sessionStorage.removeItem("mockUser");
+    try {
+      await signOut(auth);
+    } catch (e) {}
+    router.push("/");
+  };
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white font-sans">
@@ -104,14 +125,17 @@ export default function Dashboard() {
 
       {/* Header */}
       <header className="border-b border-[#1a1a1a] px-8 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-black text-[#00e676] tracking-wider">⚡ GIGACHAD ADMIN</h1>
-          <p className="text-xs text-[#555] mt-0.5">AI-Powered Parametric Micro-Insurance — Insurer Dashboard</p>
+        <div className="flex items-center gap-4">
+          <Image src="/logo.png" alt="GigaChad" width={40} height={40} />
+          <div>
+            <h1 className="text-2xl font-black text-[#00e676] tracking-wider">GIGACHAD ADMIN</h1>
+            <p className="text-xs text-[#555] mt-0.5">AI-Powered Parametric Micro-Insurance — Insurer Dashboard</p>
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <button 
-            onClick={() => { signOut(auth); router.push("/") }} 
-            className="text-xs border text-red-500 border-red-500/20 px-3 py-1 rounded"
+            onClick={handleLogout} 
+            className="text-xs border text-red-500 border-red-500/20 px-3 py-1 rounded hover:bg-red-500/10 transition-colors"
           >
             Logout
           </button>
@@ -126,7 +150,7 @@ export default function Dashboard() {
           {[
             { label: "Active Riders", value: stats?.total_riders ?? 0, color: "#00e676", icon: "👥" },
             { label: "Active Policies", value: stats?.active_policies ?? 0, color: "#2196f3", icon: "🛡️" },
-            { label: "Active Disruptions", value: stats?.active_disruptions ?? 0, color: "#ff9800", icon: "⚡" },
+            { label: "Active Disruptions", value: stats?.active_disruptions ?? 0, color: "#ff9800", icon: "🚨" },
             { label: "Total Paid Out", value: `₹${(stats?.total_paid_out_inr ?? 0).toFixed(0)}`, color: "#e91e63", icon: "💸" },
             { label: "Total Claims", value: stats?.total_claims ?? 0, color: "#9c27b0", icon: "📋" },
             { label: "Paid Claims", value: stats?.paid_claims ?? 0, color: "#00e676", icon: "✅" },

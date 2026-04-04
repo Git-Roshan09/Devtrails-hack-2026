@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../firebase";
 
@@ -52,9 +53,12 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col items-center justify-center font-sans tracking-wide py-12">
+    <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col items-center justify-center font-sans tracking-wide py-12 p-4">
       <div className="max-w-md w-full bg-[#111] border border-[#1e1e1e] p-8 rounded-2xl shadow-xl">
-        <h1 className="text-2xl font-black text-[#00e676] tracking-wider text-center mb-6">START YOUR SHIFT SAFE</h1>
+        <div className="flex flex-col items-center mb-6">
+          <Image src="/logo.png" alt="GigaChad" width={64} height={64} className="mb-3" />
+          <h1 className="text-2xl font-black text-[#00e676] tracking-wider text-center">START YOUR SHIFT SAFE</h1>
+        </div>
 
         {error && <p className="text-red-500 text-sm mb-4 text-center">{error}</p>}
 

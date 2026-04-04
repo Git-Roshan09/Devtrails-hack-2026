@@ -4,6 +4,11 @@ import { useAuth } from "../../AuthContext";
 import { useRouter } from "next/navigation";
 import { signOut } from "firebase/auth";
 import { auth } from "../../../firebase";
+import Image from "next/image";
+import dynamic from "next/dynamic";
+
+// Dynamically import map to avoid SSR issues
+const LiveMap = dynamic(() => import("../../../components/LiveMap"), { ssr: false });
 
 // Mock data for demo
 const MOCK_RIDER = {
@@ -11,14 +16,14 @@ const MOCK_RIDER = {
   phone: "+91 9876543210",
   zone: "Velachery",
   status: "active",
-  totalEarnings: 12450,
+  totalEarnings: 330,
   totalClaims: 3,
   activePlan: "giga_plus",
 };
 
 const MOCK_CLAIMS = [
-  { id: 1, date: "2026-04-02", type: "Flood", zone: "Velachery", amount: 250, status: "paid", hours: 2.5 },
-  { id: 2, date: "2026-03-28", type: "Traffic Gridlock", zone: "OMR", amount: 150, status: "paid", hours: 1.5 },
+  { id: 1, date: "2026-04-02", type: "Flood", zone: "Velachery", amount: 300, status: "paid", hours: 3 },
+  { id: 2, date: "2026-03-28", type: "Traffic Gridlock", zone: "OMR", amount: 200, status: "paid", hours: 2 },
   { id: 3, date: "2026-03-20", type: "Strike", zone: "T. Nagar", amount: 0, status: "pending", hours: 3 },
 ];
 
@@ -40,9 +45,9 @@ const CHENNAI_ZONES = [
 ];
 
 const PLANS = [
-  { id: "giga_basic", name: "BASIC", price: 29, payout: 150, color: "#888" },
-  { id: "giga_plus", name: "PRO", price: 49, payout: 250, color: "#00e676" },
-  { id: "giga_pro", name: "ULTRA", price: 99, payout: 400, color: "#e91e63" },
+  { id: "giga_basic", name: "GIGA BASIC", price: 19, payout: 300, color: "#888", description: "Covers ~3 hours of lost base wages", target: "Part-time riders (evening shifts)" },
+  { id: "giga_plus", name: "GIGA PLUS", price: 39, payout: 600, color: "#00e676", description: "Covers half-day + minor missed incentives", target: "Full-time riders (8-10 hr shifts)" },
+  { id: "giga_pro", name: "GIGA PRO", price: 59, payout: 1000, color: "#ffd700", description: "Covers full-day + daily milestone bonuses", target: "Power-riders (14 hr shifts)" },
 ];
 
 export default function RiderDashboard() {
@@ -52,11 +57,24 @@ export default function RiderDashboard() {
   const [riderLocation, setRiderLocation] = useState({ lat: 12.9789, lng: 80.218 });
   const [showClaimModal, setShowClaimModal] = useState(false);
   const [selectedClaim, setSelectedClaim] = useState(null);
+  const [mockUser, setMockUser] = useState(null);
+
+  // Check for mock user session
+  useEffect(() => {
+    const stored = sessionStorage.getItem("mockUser");
+    if (stored) {
+      setMockUser(JSON.parse(stored));
+    }
+  }, []);
 
   useEffect(() => {
     if (currentUser === undefined) return;
-    if (!currentUser) router.push("/");
-  }, [currentUser, router]);
+    // Allow access if either Firebase user or mock user exists
+    if (!currentUser && !mockUser) {
+      const stored = sessionStorage.getItem("mockUser");
+      if (!stored) router.push("/");
+    }
+  }, [currentUser, mockUser, router]);
 
   // Simulate moving location
   useEffect(() => {
@@ -70,25 +88,34 @@ export default function RiderDashboard() {
   }, []);
 
   const handleLogout = async () => {
-    await signOut(auth);
+    sessionStorage.removeItem("mockUser");
+    try {
+      await signOut(auth);
+    } catch (e) {}
     router.push("/");
   };
 
-  if (!currentUser) return null;
-
+  const userEmail = currentUser?.email || mockUser?.email || MOCK_RIDER.name;
   const currentZone = CHENNAI_ZONES.find(z => z.name === "Velachery");
+
+  // Wait for auth check
+  if (!currentUser && !mockUser) {
+    const stored = typeof window !== 'undefined' ? sessionStorage.getItem("mockUser") : null;
+    if (!stored) return null;
+  }
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white font-sans">
       {/* Header */}
       <header className="px-6 py-4 border-b border-[#1a1a1a] flex justify-between items-center sticky top-0 bg-[#0a0a0a]/95 backdrop-blur z-50">
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl font-black text-[#00e676] tracking-wider">⚡ GIGACHAD</h1>
+        <div className="flex items-center gap-3">
+          <Image src="/logo.png" alt="GigaChad" width={36} height={36} />
+          <h1 className="text-xl font-black text-[#00e676] tracking-wider">GIGACHAD</h1>
           <span className="text-xs text-[#555] hidden md:block">| Rider Dashboard</span>
         </div>
         <div className="flex items-center gap-4">
           <div className="text-right hidden md:block">
-            <div className="text-sm font-bold">{currentUser?.email || MOCK_RIDER.name}</div>
+            <div className="text-sm font-bold">{userEmail}</div>
             <div className="text-xs text-[#555]">{MOCK_RIDER.phone}</div>
           </div>
           <button onClick={handleLogout} className="text-xs text-[#888] hover:text-red-500 transition-colors">
@@ -156,65 +183,23 @@ function OverviewTab({ rider, weather, zones, location, currentZone }) {
         <StatCard label="Claims Made" value={rider.totalClaims} color="#00e676" />
       </div>
 
-      {/* Live Location Map (Mock) */}
+      {/* Live Location Map with OpenStreetMap */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-[#111] border border-[#1e1e1e] rounded-2xl p-6">
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-bold text-lg">📍 Live Location</h3>
             <span className="text-xs text-[#00e676] animate-pulse">● TRACKING ACTIVE</span>
           </div>
-          <div className="relative h-64 bg-[#0a0a0a] rounded-xl overflow-hidden">
-            {/* Mock Map */}
-            <div className="absolute inset-0 bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a]">
-              <div className="absolute inset-0 opacity-20">
-                {/* Grid lines */}
-                {[...Array(10)].map((_, i) => (
-                  <div key={`h-${i}`} className="absolute w-full h-px bg-[#333]" style={{ top: `${i * 10}%` }} />
-                ))}
-                {[...Array(10)].map((_, i) => (
-                  <div key={`v-${i}`} className="absolute h-full w-px bg-[#333]" style={{ left: `${i * 10}%` }} />
-                ))}
-              </div>
-              
-              {/* Zone markers */}
-              {zones.map((zone, i) => (
-                <div 
-                  key={zone.name}
-                  className={`absolute w-4 h-4 rounded-full border-2 ${
-                    zone.status === "danger" ? "bg-red-500/30 border-red-500" :
-                    zone.status === "warning" ? "bg-yellow-500/30 border-yellow-500" :
-                    "bg-green-500/30 border-green-500"
-                  }`}
-                  style={{ 
-                    left: `${20 + i * 12}%`, 
-                    top: `${30 + (i % 3) * 20}%`,
-                  }}
-                  title={zone.name}
-                />
-              ))}
-              
-              {/* Rider marker */}
-              <div 
-                className="absolute w-6 h-6 bg-[#00e676] rounded-full border-4 border-white shadow-lg shadow-[#00e676]/50 animate-pulse z-10"
-                style={{ 
-                  left: "45%", 
-                  top: "50%",
-                  transform: "translate(-50%, -50%)"
-                }}
-              >
-                <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black/80 px-2 py-1 rounded text-xs whitespace-nowrap">
-                  You are here
-                </div>
-              </div>
-            </div>
-            
-            {/* Coordinates */}
-            <div className="absolute bottom-3 left-3 bg-black/80 px-3 py-2 rounded-lg text-xs">
-              <span className="text-[#888]">LAT:</span> {location.lat.toFixed(4)} | <span className="text-[#888]">LNG:</span> {location.lng.toFixed(4)}
-            </div>
-            <div className="absolute bottom-3 right-3 bg-black/80 px-3 py-2 rounded-lg text-xs">
-              <span className="text-[#888]">Zone:</span> <span className="text-[#00e676]">Velachery</span>
-            </div>
+          <div className="relative h-72 rounded-xl overflow-hidden">
+            <LiveMap 
+              riderLocation={location} 
+              zones={zones} 
+            />
+          </div>
+          {/* Coordinates */}
+          <div className="flex justify-between mt-3 text-xs">
+            <span className="text-[#888]">LAT: {location.lat.toFixed(4)} | LNG: {location.lng.toFixed(4)}</span>
+            <span className="text-[#888]">Zone: <span className="text-[#00e676]">Velachery</span></span>
           </div>
         </div>
 
@@ -350,7 +335,8 @@ function PlansTab({ currentPlan }) {
             )}
             <div className="text-xs font-bold tracking-wider mb-2" style={{ color: plan.color }}>{plan.name}</div>
             <div className="text-4xl font-black mb-2">₹{plan.price}<span className="text-sm text-[#555] font-normal">/week</span></div>
-            <div className="text-sm text-[#888] mb-6">Payout: ₹{plan.payout}/day max</div>
+            <div className="text-sm text-[#888] mb-2">Payout: ₹{plan.payout}/event max</div>
+            <div className="text-xs text-[#555] mb-4">{plan.description}</div>
             <ul className="space-y-2 text-sm text-[#ccc] mb-6">
               <li>✓ Rain & Flood Coverage</li>
               <li>✓ Traffic Gridlock</li>

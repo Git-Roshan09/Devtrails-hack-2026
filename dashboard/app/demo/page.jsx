@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 // ─── DEMO STEPS CONFIGURATION ────────────────────────────────
 const DEMO_STEPS = [
@@ -8,7 +9,7 @@ const DEMO_STEPS = [
     id: "intro",
     title: "Welcome to GigaChad",
     subtitle: "AI-Powered Parametric Micro-Insurance for Gig Workers",
-    icon: "⚡",
+    icon: "🛡️",
     duration: 4000,
     content: "intro",
   },
@@ -169,8 +170,9 @@ export default function DemoPage() {
     <div className="min-h-screen bg-[#0a0a0a] text-white font-sans overflow-hidden">
       {/* Header */}
       <header className="px-6 py-4 border-b border-[#1a1a1a] flex justify-between items-center relative z-10">
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl font-black text-[#00e676] tracking-wider">⚡ GIGACHAD</h1>
+        <div className="flex items-center gap-3">
+          <Image src="/logo.png" alt="GigaChad" width={36} height={36} />
+          <h1 className="text-xl font-black text-[#00e676] tracking-wider">GIGACHAD</h1>
           <span className="px-3 py-1 bg-[#00e676]/20 text-[#00e676] text-xs font-bold rounded-full animate-pulse">
             DEMO MODE
           </span>
@@ -547,8 +549,8 @@ function ClaimContent() {
 
   const steps = [
     { icon: "📍", text: "GPS location verified in disruption zone" },
-    { icon: "⏰", text: "Idle time calculated: 2.5 hours" },
-    { icon: "📊", text: "Payout calculated: ₹250" },
+    { icon: "⏰", text: "Idle time calculated: 3 hours" },
+    { icon: "📊", text: "Payout calculated: ₹300" },
     { icon: "✅", text: "Claim auto-created" },
     { icon: "🚀", text: "Sent for instant processing" },
   ];
@@ -558,7 +560,7 @@ function ClaimContent() {
       <div className="bg-[#111] border border-[#1e1e1e] rounded-2xl p-6 space-y-4">
         <div className="text-center mb-6">
           <div className="text-xs text-[#00e676] font-bold">AUTO-CLAIM #1847</div>
-          <div className="text-2xl font-black mt-2">₹250 Payout</div>
+          <div className="text-2xl font-black mt-2">₹300 Payout</div>
         </div>
 
         {steps.map((s, i) => (
@@ -676,7 +678,7 @@ function WhatsAppContent() {
 
   const allMessages = [
     { type: "bot", text: "🎉 Good news! Your claim has been approved." },
-    { type: "bot", text: "Disruption: Flood in Velachery\nIdle Time: 2.5 hours\nPayout: ₹250" },
+    { type: "bot", text: "Disruption: Flood in Velachery\nIdle Time: 3 hours\nPayout: ₹300" },
     { type: "bot", text: "💸 Money will be sent to your UPI: hari@paytm" },
     { type: "user", text: "Thanks! When will I receive it?" },
     { type: "bot", text: "⚡ Already processed! Check your account in 2-3 minutes." },
@@ -756,7 +758,7 @@ function PayoutContent() {
     <div className="space-y-8 animate-fadeIn">
       {/* Amount Display */}
       <div className="text-center">
-        <div className="text-6xl font-black text-[#00e676] animate-pulse">₹250</div>
+        <div className="text-6xl font-black text-[#00e676] animate-pulse">₹300</div>
         <div className="text-[#888] mt-2">to hari@paytm via UPI</div>
       </div>
 
