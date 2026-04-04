@@ -277,32 +277,21 @@ A fully automated parametric system is highly vulnerable to GPS spoofing. If we 
 * **Predictive Earnings Copilot:** Before a storm hits, the WhatsApp bot proactively messages the rider: *"Warning: Heavy rain predicted in T. Nagar in 30 mins. Move to Alwarpet to maintain your earnings stream. If you stay, your income protection is active."*
 
 ---
-## > 🇨‌🇴‌🇲‌🇵‌🇱‌🇪‌🇹‌🇪‌ 🇹‌🇪‌🇨‌🇭‌ 🇸‌🇹‌🇦‌🇨‌🇰‌
-<div align="center">
+## Complete Tech Stack
 
-![React Native](https://img.shields.io/badge/react_native-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB) ![Expo](https://img.shields.io/badge/expo-1C1E24?style=for-the-badge&logo=expo&logoColor=#D04A37) ![WhatsApp API](https://img.shields.io/badge/WhatsApp_API-25D366?style=for-the-badge&logo=whatsapp&logoColor=white) ![Twilio](https://img.shields.io/badge/Twilio-F22F46?style=for-the-badge&logo=Twilio&logoColor=white)
-
-![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54) ![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi) ![NodeJS](https://img.shields.io/badge/node.js-6DA55F?style=for-the-badge&logo=node.js&logoColor=white) ![GraphQL](https://img.shields.io/badge/-GraphQL-E10098?style=for-the-badge&logo=graphql&logoColor=white) ![PostgreSQL](https://img.shields.io/badge/postgresql-4169e1?style=for-the-badge&logo=postgresql&logoColor=white)
-
-![PyTorch](https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?style=for-the-badge&logo=PyTorch&logoColor=white) ![Neo4j](https://img.shields.io/badge/Neo4j-008CC1?style=for-the-badge&logo=neo4j&logoColor=white) ![Llama 3](https://img.shields.io/badge/Meta_Llama_3-0467DF?style=for-the-badge&logo=meta&logoColor=white) ![Pandas](https://img.shields.io/badge/pandas-%23150458.svg?style=for-the-badge&logo=pandas&logoColor=white) 
-
-![OpenWeather](https://img.shields.io/badge/OpenWeather_API-EB6E4B?style=for-the-badge&logo=openweathermap&logoColor=white) ![TomTom API](https://img.shields.io/badge/TomTom_Traffic-DF0000?style=for-the-badge&logo=tomtom&logoColor=white) ![Razorpay](https://img.shields.io/badge/Razorpay_Sandbox-02042B?style=for-the-badge&logo=razorpay&logoColor=3395FF) ![Stripe](https://img.shields.io/badge/Stripe-626CD9?style=for-the-badge&logo=Stripe&logoColor=white)
-
-![AWS](https://img.shields.io/badge/AWS-%23FF9900.svg?style=for-the-badge&logo=amazon-aws&logoColor=white) ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white) ![GitHub Actions](https://img.shields.io/badge/github%20actions-%232671E5.svg?style=for-the-badge&logo=githubactions&logoColor=white)
-
-</div>
-
-### Build Stack Table
-
-| Layer | Stack |
-| :--- | :--- |
-| Mobile / Telemetry | React Native, Expo, Background Geolocation & Sensor SDK |
-| Frontend UI | Next.js Dashboard, WhatsApp Business API (Twilio / Meta) |
-| Backend Engine | Python (FastAPI), Node.js (Event Triggers) |
-| AI & Data | TimeGPT/Chronos API, Llama-3, Neo4j, PyTorch Geometric |
-| Database | PostgreSQL |
-| Integrations | OpenWeather API, TomTom Traffic API, Razorpay Sandbox |
-| Build & Deploy | Docker, AWS, GitHub Actions |
+| Layer | Tools Used | Purpose |
+| :--- | :--- | :--- |
+| Web Dashboard | Next.js, React, Tailwind CSS | Admin/Rider UI, demo flow, pricing/claims views |
+| Mobile App | React Native, Expo | Rider tracking, claims, proof submission |
+| Auth | Firebase Authentication | Login, session handling (real + mock login) |
+| Maps & Location | OpenStreetMap, Leaflet | Live rider location and risk-zone map |
+| Backend APIs | Python (FastAPI), Node.js | Triggers, claim workflow, automation |
+| Database | PostgreSQL | User, rider, policy, claim data |
+| AI / Risk Engine | TimeGPT / Chronos, Llama-3 | Premium prediction, assistant/NLP flows |
+| Fraud Detection | Neo4j, PyTorch Geometric (GraphSAGE) | Spoof/ring fraud detection |
+| Messaging | WhatsApp Business API (Twilio / Meta) | Onboarding, alerts, payout notifications |
+| External Integrations | OpenWeather, TomTom Traffic, Razorpay | Disruption signals and payouts |
+| DevOps | Docker, AWS, GitHub Actions | Containerization, deployment, CI/CD |
 
 ---
 *Built for the Guidewire DEVTrails Hackathon 2026.*
