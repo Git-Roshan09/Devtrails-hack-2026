@@ -29,7 +29,7 @@ from engines.risk_aggregator import (
     calculate_weekly_risk_score,
     RiskAssessment,
 )
-from engines.weather_forecaster import get_zone_weather, get_chennai_overview
+from engines.weather_forecaster import get_zone_weather, get_all_chennai_weather
 from engines.news_scraper import get_disruption_news
 from config import get_settings
 
@@ -220,18 +220,33 @@ async def get_weather_overview():
     """Get current weather conditions for Chennai."""
     
     try:
-        weather = await get_chennai_overview()
+        all_weather = await get_all_chennai_weather()
+        
+        # Aggregate weather from all zones
+        if all_weather:
+            avg_temp = sum(w.temperature for w in all_weather) / len(all_weather)
+            avg_humidity = sum(w.humidity for w in all_weather) / len(all_weather)
+            max_rain = max(w.rain_mm for w in all_weather)
+            avg_wind = sum(w.wind_speed for w in all_weather) / len(all_weather)
+            max_risk = max(w.disruption_risk for w in all_weather)
+            max_waterlog = max(w.waterlog_risk for w in all_weather)
+            conditions = all_weather[0].conditions
+            alert = next((w.alert for w in all_weather if w.alert), None)
+        else:
+            avg_temp = avg_humidity = max_rain = avg_wind = max_risk = max_waterlog = 0
+            conditions = "unknown"
+            alert = None
         
         return WeatherResponse(
             zone=None,
-            temperature=weather.get("temperature", 0),
-            humidity=weather.get("humidity", 0),
-            rain_mm=weather.get("rain_mm", 0),
-            wind_speed=weather.get("wind_speed", 0),
-            conditions=weather.get("conditions", "unknown"),
-            risk_score=weather.get("risk_score", 0),
-            waterlog_risk=weather.get("waterlog_risk", 0),
-            alert=weather.get("alert"),
+            temperature=avg_temp,
+            humidity=avg_humidity,
+            rain_mm=max_rain,
+            wind_speed=avg_wind,
+            conditions=conditions,
+            risk_score=max_risk,
+            waterlog_risk=max_waterlog,
+            alert=alert,
             timestamp=datetime.utcnow(),
         )
         

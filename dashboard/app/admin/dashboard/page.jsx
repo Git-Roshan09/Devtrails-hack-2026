@@ -3,6 +3,8 @@ import { useEffect, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { useAuth } from "../../AuthContext";
 import { useRouter } from "next/navigation";
+import { signOut } from "firebase/auth";
+import { auth } from "../../../firebase";
 
 const Map = dynamic(() => import("../../../components/HexMap"), { ssr: false });
 
@@ -108,7 +110,7 @@ export default function Dashboard() {
         </div>
         <div className="flex items-center gap-3">
           <button 
-            onClick={() => { import("firebase/auth").then(m => m.signOut(import("../../firebase").then(f=>f.auth))); router.push("/") }} 
+            onClick={() => { signOut(auth); router.push("/") }} 
             className="text-xs border text-red-500 border-red-500/20 px-3 py-1 rounded"
           >
             Logout

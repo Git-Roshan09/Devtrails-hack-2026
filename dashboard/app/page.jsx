@@ -108,6 +108,20 @@ export default function Home() {
         <div className="mt-4 text-center text-sm text-[#555]">
           New Rider? <a href="/register" className="text-[#00e676] hover:underline">Create an Account</a>
         </div>
+
+        {/* Demo Mode Button for Evaluators */}
+        <div className="mt-6 pt-6 border-t border-[#1e1e1e]">
+          <button 
+            onClick={() => router.push("/demo")}
+            className="w-full py-4 rounded-xl border-2 border-dashed border-[#00e676] text-[#00e676] font-bold hover:bg-[#00e676]/10 transition-all group"
+          >
+            <span className="flex items-center justify-center gap-2">
+              <span className="text-xl">🎬</span>
+              <span>WATCH DEMO</span>
+              <span className="text-xs text-[#888] group-hover:text-[#00e676]">(For Evaluators)</span>
+            </span>
+          </button>
+        </div>
       </div>
 
       {/* Password Reset Modal */}

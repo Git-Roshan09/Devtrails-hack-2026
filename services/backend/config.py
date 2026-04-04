@@ -45,6 +45,9 @@ class Settings(BaseSettings):
     twilio_auth_token: str = ""
     twilio_whatsapp_number: str = "whatsapp:+14155238886"
 
+    # ── Firebase Admin ──────────────────────────────────────────
+    firebase_service_account_path: str = ""
+
     # ── Celery / Background Tasks ────────────────────────────
     celery_broker_url: str = "redis://localhost:6379/0"
     celery_result_backend: str = "redis://localhost:6379/0"

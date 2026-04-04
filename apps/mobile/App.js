@@ -33,7 +33,7 @@ import { signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordRe
 import { auth } from "./firebase";
 
 
-const BACKEND_URL = "https://pink-parts-fold.loca.lt"; 
+const BACKEND_URL = "https://pink-vans-think.loca.lt"; 
 // Note: We now fetch rider id from Postgres via Firebase UID, 
 // so hardcoded RIDER_ID is no longer strictly used, but we keep the var for API calls if needed.
 
@@ -248,6 +248,138 @@ export default function App() {
       } catch (e) {
         Alert.alert("Error", "Failed to upload video. Please try WhatsApp.");
       }
+    }
+  };
+
+  // ─── FILE NEW CLAIM WITH PROOF ────────────────────────────────
+  const [showNewClaimModal, setShowNewClaimModal] = useState(false);
+  const [newClaimType, setNewClaimType] = useState("flood");
+  const [newClaimDescription, setNewClaimDescription] = useState("");
+  const [newClaimEvidence, setNewClaimEvidence] = useState(null);
+  const [submittingClaim, setSubmittingClaim] = useState(false);
+
+  const handlePickEvidence = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission Required", "We need access to your photos to upload evidence.");
+      return;
+    }
+
+    Alert.alert(
+      "Select Evidence Type",
+      "Choose how you want to provide proof",
+      [
+        {
+          text: "📷 Take Photo",
+          onPress: async () => {
+            const { status: camStatus } = await ImagePicker.requestCameraPermissionsAsync();
+            if (camStatus !== "granted") {
+              Alert.alert("Permission Required", "Camera access is needed.");
+              return;
+            }
+            const result = await ImagePicker.launchCameraAsync({
+              allowsEditing: true,
+              quality: 0.7,
+            });
+            if (!result.canceled && result.assets[0]) {
+              setNewClaimEvidence({ type: "photo", uri: result.assets[0].uri });
+            }
+          }
+        },
+        {
+          text: "🖼️ Choose Photo",
+          onPress: async () => {
+            const result = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ImagePicker.MediaTypeOptions.Images,
+              allowsEditing: true,
+              quality: 0.7,
+            });
+            if (!result.canceled && result.assets[0]) {
+              setNewClaimEvidence({ type: "photo", uri: result.assets[0].uri });
+            }
+          }
+        },
+        {
+          text: "🎥 Record Video",
+          onPress: async () => {
+            const { status: camStatus } = await ImagePicker.requestCameraPermissionsAsync();
+            if (camStatus !== "granted") {
+              Alert.alert("Permission Required", "Camera access is needed.");
+              return;
+            }
+            const result = await ImagePicker.launchCameraAsync({
+              mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+              allowsEditing: true,
+              quality: 0.5,
+              videoMaxDuration: 30,
+            });
+            if (!result.canceled && result.assets[0]) {
+              setNewClaimEvidence({ type: "video", uri: result.assets[0].uri });
+            }
+          }
+        },
+        { text: "Cancel", style: "cancel" }
+      ]
+    );
+  };
+
+  const handleSubmitNewClaim = async () => {
+    if (!dbRiderId) {
+      Alert.alert("Error", "Not connected to backend. Please check your connection.");
+      return;
+    }
+    
+    setSubmittingClaim(true);
+    try {
+      // Prepare form data
+      const formData = new FormData();
+      formData.append("rider_id", dbRiderId);
+      formData.append("disruption_type", newClaimType);
+      formData.append("description", newClaimDescription);
+      formData.append("zone", useFakeGps ? selectedZone : "detected");
+      
+      if (currentCoords) {
+        formData.append("lat", currentCoords.lat);
+        formData.append("lng", currentCoords.lng);
+      }
+      
+      if (newClaimEvidence) {
+        formData.append("evidence", {
+          uri: newClaimEvidence.uri,
+          type: newClaimEvidence.type === "video" ? "video/mp4" : "image/jpeg",
+          name: newClaimEvidence.type === "video" ? "evidence.mp4" : "evidence.jpg",
+        });
+      }
+
+      const response = await fetch(`${BACKEND_URL}/api/claims/submit`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "multipart/form-data",
+          "Bypass-Tunnel-Reminder": "true",
+        },
+        body: formData,
+      });
+
+      if (response.ok) {
+        Alert.alert(
+          "✅ Claim Submitted!",
+          "Your claim is being processed. You'll receive a WhatsApp notification once approved.",
+          [{ text: "OK" }]
+        );
+        setShowNewClaimModal(false);
+        setNewClaimType("flood");
+        setNewClaimDescription("");
+        setNewClaimEvidence(null);
+        fetchClaims();
+      } else {
+        const errorData = await response.json();
+        Alert.alert("Error", errorData.detail || "Failed to submit claim. Try again.");
+      }
+    } catch (e) {
+      console.error("Claim submission error:", e);
+      Alert.alert("Error", "Network error. Please check your connection.");
+    } finally {
+      setSubmittingClaim(false);
     }
   };
 
@@ -555,6 +687,12 @@ export default function App() {
         </View>
       </View>
 
+      {/* New Claim Button */}
+      <TouchableOpacity style={s.newClaimBtn} onPress={() => setShowNewClaimModal(true)}>
+        <Text style={s.newClaimBtnIcon}>📝</Text>
+        <Text style={s.newClaimBtnText}>File New Claim</Text>
+      </TouchableOpacity>
+
       {/* Claims List */}
       <FlatList
         data={claims}
@@ -603,6 +741,101 @@ export default function App() {
             </View>
           </View>
         )}
+      </Modal>
+
+      {/* New Claim Modal */}
+      <Modal visible={showNewClaimModal} animationType="slide" transparent onRequestClose={() => setShowNewClaimModal(false)}>
+        <View style={s.modalOverlay}>
+          <View style={[s.modalContent, { maxHeight: "85%" }]}>
+            <View style={s.modalHeader}>
+              <Text style={s.modalTitle}>📝 File New Claim</Text>
+              <TouchableOpacity onPress={() => setShowNewClaimModal(false)}><Text style={s.modalClose}>✕</Text></TouchableOpacity>
+            </View>
+            
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {/* Disruption Type */}
+              <Text style={[s.cardTitle, { marginTop: 10 }]}>DISRUPTION TYPE</Text>
+              <View style={s.typeRow}>
+                {[
+                  { id: "flood", icon: "🌊", label: "Flood" },
+                  { id: "traffic", icon: "🚗", label: "Traffic" },
+                  { id: "strike", icon: "✊", label: "Strike" },
+                  { id: "vvip", icon: "🚔", label: "VVIP" },
+                ].map((type) => (
+                  <TouchableOpacity
+                    key={type.id}
+                    style={[s.typeBtn, newClaimType === type.id && s.typeBtnActive]}
+                    onPress={() => setNewClaimType(type.id)}
+                  >
+                    <Text style={s.typeIcon}>{type.icon}</Text>
+                    <Text style={[s.typeLabel, newClaimType === type.id && s.typeLabelActive]}>{type.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Description */}
+              <Text style={[s.cardTitle, { marginTop: 20 }]}>DESCRIPTION (OPTIONAL)</Text>
+              <TextInput
+                style={[s.input, { height: 80, textAlignVertical: "top" }]}
+                placeholder="Describe what happened..."
+                placeholderTextColor="#555"
+                multiline
+                value={newClaimDescription}
+                onChangeText={setNewClaimDescription}
+              />
+
+              {/* Evidence Upload */}
+              <Text style={[s.cardTitle, { marginTop: 20 }]}>PROOF / EVIDENCE</Text>
+              <TouchableOpacity style={s.evidenceBtn} onPress={handlePickEvidence}>
+                {newClaimEvidence ? (
+                  <View style={s.evidencePreview}>
+                    <Text style={s.evidenceIcon}>{newClaimEvidence.type === "video" ? "🎥" : "📷"}</Text>
+                    <Text style={s.evidenceText}>
+                      {newClaimEvidence.type === "video" ? "Video attached" : "Photo attached"} ✓
+                    </Text>
+                    <TouchableOpacity onPress={() => setNewClaimEvidence(null)}>
+                      <Text style={{ color: "#f44336", marginLeft: 10 }}>Remove</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <View style={s.evidenceEmpty}>
+                    <Text style={s.evidenceIcon}>📎</Text>
+                    <Text style={s.evidenceText}>Tap to add photo/video proof</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+              <Text style={[s.info, { marginTop: 8, textAlign: "left" }]}>
+                Adding evidence speeds up claim approval. You can capture: flooded roads, traffic jams, protest images, etc.
+              </Text>
+
+              {/* Location Info */}
+              <View style={[s.card, { marginTop: 20, backgroundColor: "#0a0a0a" }]}>
+                <Text style={s.cardTitle}>📍 YOUR LOCATION</Text>
+                <Text style={{ color: "#00e676", fontSize: 13 }}>
+                  {useFakeGps ? selectedZone : "Will be auto-detected"}
+                </Text>
+                {currentCoords && (
+                  <Text style={{ color: "#555", fontSize: 11, marginTop: 4 }}>
+                    Lat: {currentCoords.lat} · Lng: {currentCoords.lng}
+                  </Text>
+                )}
+              </View>
+
+              {/* Submit Button */}
+              <TouchableOpacity
+                style={[s.ctaBtn, submittingClaim && { opacity: 0.6 }]}
+                onPress={handleSubmitNewClaim}
+                disabled={submittingClaim}
+              >
+                <Text style={s.ctaTxt}>{submittingClaim ? "Submitting..." : "SUBMIT CLAIM"}</Text>
+              </TouchableOpacity>
+
+              <Text style={[s.info, { marginTop: 8 }]}>
+                Claims are verified automatically using GPS, weather data, and AI analysis.
+              </Text>
+            </ScrollView>
+          </View>
+        </View>
       </Modal>
     </View>
   );
@@ -841,4 +1074,58 @@ const s = StyleSheet.create({
     alignItems: "center",
   },
   closeBtnText: { color: "#fff", fontWeight: "700" },
+
+  // New Claim Styles
+  newClaimBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#001a0d",
+    borderWidth: 1,
+    borderColor: "#00e676",
+    borderRadius: 12,
+    paddingVertical: 14,
+    marginHorizontal: 12,
+    marginBottom: 12,
+    gap: 8,
+  },
+  newClaimBtnIcon: { fontSize: 18 },
+  newClaimBtnText: { color: "#00e676", fontWeight: "700", fontSize: 14 },
+  
+  typeRow: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
+  typeBtn: {
+    flex: 1,
+    minWidth: "22%",
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+    alignItems: "center",
+    backgroundColor: "#161616",
+  },
+  typeBtnActive: { backgroundColor: "#001a0d", borderColor: "#00e676" },
+  typeIcon: { fontSize: 24, marginBottom: 4 },
+  typeLabel: { color: "#555", fontSize: 11, fontWeight: "600" },
+  typeLabelActive: { color: "#00e676" },
+  
+  evidenceBtn: {
+    backgroundColor: "#1a1a1a",
+    borderWidth: 1,
+    borderColor: "#333",
+    borderStyle: "dashed",
+    borderRadius: 12,
+    padding: 20,
+  },
+  evidencePreview: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  evidenceEmpty: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  evidenceIcon: { fontSize: 24, marginRight: 10 },
+  evidenceText: { color: "#888", fontSize: 14 },
 });

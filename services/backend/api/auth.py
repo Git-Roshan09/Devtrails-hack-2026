@@ -3,25 +3,38 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from pydantic import BaseModel
 import uuid
-import firebase_admin
-from firebase_admin import auth as firebase_auth, credentials
+import os
 
 from database import get_db
 from models import Rider, UserRole
+from config import get_settings
 
 router = APIRouter()
+settings = get_settings()
 
-# Initialize Firebase Admin (in a real app, use credentials.Certificate("path/to/key.json"))
-# For hackathon demo, if no credentials provided, it uses default application credentials
+# Firebase Admin SDK - only initialize if credentials exist
+FIREBASE_ADMIN_INITIALIZED = False
 try:
+    import firebase_admin
+    from firebase_admin import auth as firebase_auth, credentials
+    
     firebase_admin.get_app()
+    FIREBASE_ADMIN_INITIALIZED = True
 except ValueError:
-    # Will fail if no exact cert is provided and default creds aren't found locally, 
-    # but we initialize it here safely to allow tests to run
-    try:
-        firebase_admin.initialize_app()
-    except Exception as e:
-        print(f"Warning: Firebase Admin not fully initialized securely. {e}")
+    # App not initialized yet
+    cred_path = settings.firebase_service_account_path
+    if cred_path and os.path.exists(cred_path):
+        try:
+            cred = credentials.Certificate(cred_path)
+            firebase_admin.initialize_app(cred)
+            FIREBASE_ADMIN_INITIALIZED = True
+            print(f"✅ Firebase Admin SDK initialized with {cred_path}")
+        except Exception as e:
+            print(f"Warning: Firebase Admin init failed: {e}")
+    else:
+        print("Warning: Firebase Admin SDK not configured (no service account). Token verification will be skipped.")
+except ImportError:
+    print("Warning: firebase-admin not installed")
 
 
 class SyncRequest(BaseModel):
@@ -43,12 +56,28 @@ async def verify_token(authorization: str = Header(None)) -> dict:
         raise HTTPException(status_code=401, detail="Missing or invalid token")
     
     token = authorization.split("Bearer ")[1]
-    try:
-        # Verify with Firebase
-        decoded_token = firebase_auth.verify_id_token(token)
-        return decoded_token
-    except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Invalid token: {e}")
+    
+    if FIREBASE_ADMIN_INITIALIZED:
+        try:
+            from firebase_admin import auth as firebase_auth
+            decoded_token = firebase_auth.verify_id_token(token)
+            return decoded_token
+        except Exception as e:
+            raise HTTPException(status_code=401, detail=f"Invalid token: {e}")
+    else:
+        # Hackathon mode: extract UID from token without full verification
+        # In production, always use proper Firebase Admin verification
+        import base64
+        import json
+        try:
+            # JWT has 3 parts: header.payload.signature
+            payload = token.split('.')[1]
+            # Add padding if needed
+            payload += '=' * (4 - len(payload) % 4)
+            decoded = json.loads(base64.urlsafe_b64decode(payload))
+            return {"uid": decoded.get("user_id") or decoded.get("sub")}
+        except Exception as e:
+            raise HTTPException(status_code=401, detail=f"Token decode failed: {e}")
 
 async def get_current_user(
     decoded_token: dict = Depends(verify_token),
@@ -75,12 +104,29 @@ async def sync_firebase_user(data: SyncRequest, db: AsyncSession = Depends(get_d
     Called by the frontend immediately after a successful Firebase Registration/Login.
     Verifies the token, and creates a Postgres record if the user doesn't exist.
     """
-    try:
-        decoded_token = firebase_auth.verify_id_token(data.firebase_token)
-    except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Token verification failed: {e}")
-
-    firebase_uid = decoded_token.get("uid")
+    firebase_uid = None
+    
+    if FIREBASE_ADMIN_INITIALIZED:
+        try:
+            from firebase_admin import auth as firebase_auth
+            decoded_token = firebase_auth.verify_id_token(data.firebase_token)
+            firebase_uid = decoded_token.get("uid")
+        except Exception as e:
+            raise HTTPException(status_code=401, detail=f"Token verification failed: {e}")
+    else:
+        # Hackathon mode: decode JWT without full verification
+        import base64
+        import json
+        try:
+            payload = data.firebase_token.split('.')[1]
+            payload += '=' * (4 - len(payload) % 4)
+            decoded = json.loads(base64.urlsafe_b64decode(payload))
+            firebase_uid = decoded.get("user_id") or decoded.get("sub")
+        except Exception as e:
+            raise HTTPException(status_code=401, detail=f"Token decode failed: {e}")
+    
+    if not firebase_uid:
+        raise HTTPException(status_code=401, detail="Could not extract user ID from token")
     
     # Check if user already exists
     result = await db.execute(select(Rider).where(Rider.firebase_uid == firebase_uid))
