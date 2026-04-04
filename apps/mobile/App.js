@@ -496,12 +496,13 @@ export default function App() {
   const statusLabel = { idle: "● Idle", tracking: "● Broadcasting", error: "● Error" }[status];
 
   // ── Render Loading or Login screen if not auth'd ─────────
-  if (authLoading) return <View style={s.safe}><Text style={{color:'#fff', marginTop: 100, textAlign:'center'}}>Loading...</Text></View>;
+  if (authLoading) return <View style={[s.safe, {justifyContent: 'center', alignItems: 'center'}]}><Text style={{color:'#fff', textAlign:'center'}}>Loading...</Text></View>;
   
   if (!currentUser) {
     return (
       <SafeAreaView style={[s.safe, {justifyContent: 'center', padding: 20}]}>
-        <Text style={[s.logo, {textAlign:'center', marginBottom: 10}]}>⚡ GigaChad</Text>
+        <StatusBar barStyle="light-content" backgroundColor="#000" />
+        <Text style={[s.logo, {textAlign:'center', marginBottom: 10}]}>🛡️ GigaChad</Text>
         <Text style={[s.sub, {textAlign:'center', marginBottom: 40}]}>Mobile Telemetry Gateway</Text>
         
         <View style={s.card}>
@@ -874,10 +875,10 @@ export default function App() {
 
 // ─── STYLES ──────────────────────────────────────────────────
 const s = StyleSheet.create({
-  safe:   { flex: 1, backgroundColor: "#0a0a0a" },
+  safe:   { flex: 1, backgroundColor: "#0a0a0a", paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 35 : 0 },
   scroll: { padding: 20, paddingBottom: 48 },
 
-  header: { alignItems: "center", marginBottom: 24, paddingTop: 12 },
+  header: { alignItems: "center", marginBottom: 24, paddingTop: 10 },
   logo:   { fontSize: 30, fontWeight: "900", color: "#00e676", letterSpacing: 3 },
   sub:    { color: "#444", fontSize: 12, marginTop: 4, letterSpacing: 1 },
 

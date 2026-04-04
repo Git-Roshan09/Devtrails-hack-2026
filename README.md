@@ -57,6 +57,11 @@ Chennai’s Quick-Commerce (Q-Commerce) delivery partners are the heartbeat of t
 
 ---
 
+# Architectural Diagram 
+![alt text](flow.jpeg)
+
+---
+
 # > 🇵‌🇪‌🇷‌🇸‌🇴‌🇳‌🇦‌ 🇩‌🇪‌🇪‌🇵‌ 🇩‌🇮‌🇻‌🇪‌: 🇹‌🇭‌🇪‌ 🇶‌-🇨‌🇴‌🇲‌🇲‌🇪‌🇷‌🇨‌🇪‌ 🇩‌🇪‌🇱‌🇮‌🇻‌🇪‌🇷‌🇾‌ 🇵‌🇦‌🇷‌🇹‌🇳‌🇪‌🇷‌
 
 To build a product that actually works in the real world, we cannot design for a generic "gig worker." We must design for a highly specific reality. 
@@ -101,15 +106,15 @@ Hari is exposed to uniquely Indian, hyper-local disruptions that traditional ins
 
 We designed **GigaChad** to bypass the three major psychological barriers Hari has toward traditional InsurTech apps:
 
-### Friction 1: The "Tax" Perception
+### 1: The "Tax" Perception
 * **The Problem:** Hari views insurance as a scam where he pays money but claims are always denied due to "hidden terms." 
 * **The GigaChad Solution:** **Dynamic Weekly Micro-Premiums.** Hari isn't locked into a ₹500/month policy. Every Sunday, he gets a transparent WhatsApp message: *"Clear weather this week. Your premium is only ₹15."* He only pays for the exact risk of that specific week, building immense trust.
 
-### Friction 2: App & Battery Fatigue
+### 2: App & Battery Fatigue
 * **The Problem:** Hari is already running Zepto, Google Maps, and Spotify simultaneously. His budget Android phone overheats, and battery life is his lifeline. He will delete any new app that drains his battery or requires constant foreground attention.
 * **The GigaChad Solution:** **The Dual-Interface.** We don't force him to use a heavy insurance portal. A hyper-optimized background app quietly logs telemetry (Location/Sensors). All actual interaction—buying policies, warnings, and payout alerts—happens on **WhatsApp**, an app he already has open all day.
 
-### Friction 3: The Claim Nightmare
+### 3: The Claim Nightmare
 * **The Problem:** Traditional claims require Hari to take photos, fill out English web forms, call customer care, and wait 7 days for an "adjuster" to approve it. He doesn't have the time or the language fluency for this.
 * **The GigaChad Solution:** **Zero-Touch Parametric Automation.** Hari does nothing. Our backend AI detects the Velachery flood, validates his background telemetry, and instantly fires a UPI payout to his bank account(after clear analysis of his situation and fraud detection).
 
@@ -122,6 +127,7 @@ We specifically chose the Quick-Commerce persona for this hackathon because:
 2. **Higher Disruption Sensitivity:** A 15-minute traffic jam is an annoyance for an Uber driver; for a Zepto rider with a 10-minute SLA, it is an absolute failure state. They need this micro-protection more than anyone else in the gig economy.
 
 ---
+
 *This persona analysis drives every architectural decision in the GigaChad platform, ensuring our AI serves the worker, not just the insurer.*
 
 ## > 🇹‌🇭‌🇪‌ 🇮‌🇳‌🇹‌🇪‌🇷‌🇫‌🇦‌🇨‌🇪‌ 🇸‌🇹‌🇷‌🇦‌🇹‌🇪‌🇬‌🇾‌: 🇧‌🇦‌🇨‌🇰‌🇬‌🇷‌🇴‌🇺‌🇳‌🇩‌ 🇦‌🇵‌🇵‌ + 🇼‌🇭‌🇦‌🇹‌🇸‌🇦‌🇵‌🇵‌
@@ -141,7 +147,18 @@ To balance robust data tracking with gig-worker "app fatigue," GigaChad uses a d
 
 ---
 
-## > 🇦‌🇧‌🇴‌🇺‌🇹‌ 🇹‌🇭‌🇪‌ 🇦‌🇵‌🇵‌: 🇹‌🇭‌🇪‌ 🇩‌🇺‌🇦‌🇱‌-🇮‌🇳‌🇹‌🇪‌🇷‌🇫‌🇦‌🇨‌🇪‌ 🇦‌🇷‌🇨‌🇭‌🇮‌🇹‌🇪‌🇨‌🇹‌🇺‌🇷‌🇪‌
+## > 🇦‌🇧‌🇴‌🇺‌🇹‌ 🇹‌🇭‌🇪‌ 🇦‌🇵‌🇵‌: 🇹‌🇭‌🇪‌ 
+
+### APP Screenshots
+<table>
+  <tr>
+    <td><img src="mb1.jpeg" width="200"/></td>
+    <td><img src="mb2.jpeg" width="200"/></td>
+    <td><img src="mb3.jpeg" width="200"/></td>
+  </tr>
+</table>
+
+🇩‌🇺‌🇦‌🇱‌-🇮‌🇳‌🇹‌🇪‌🇷‌🇫‌🇦‌🇨‌🇪‌ 🇦‌🇷‌🇨‌🇭‌🇮‌🇹‌🇪‌🇨‌🇹‌🇺‌🇷‌🇪‌
 Gig workers already run heavy, battery-draining navigation and delivery apps on budget smartphones. Forcing them to install another heavy insurance portal leads to instant uninstalls. GigaChad solves "App Fatigue" by splitting the architecture into two distinct layers:
 
 <img width="1406" height="992" alt="image" src="https://github.com/user-attachments/assets/8e5af6fb-99f5-4406-bbbc-f0e951ba5b60" />
@@ -275,11 +292,17 @@ A fully automated parametric system is highly vulnerable to GPS spoofing. If we 
 
 </div>
 
-* **Mobile / Telemetry:** React Native (Background Geolocation & Sensor SDK)
-* **Frontend UI:** WhatsApp Business API (Twilio / Meta)
-* **Backend Engine:** Python (FastAPI), Node.js (Event Triggers)
-* **AI & Data:** TimeGPT/Chronos API (Pricing), Llama-3 (NLP), Neo4j + PyTorch Geometric (Fraud Graph)
-* **Integrations:** OpenWeather API, TomTom Traffic API, Razorpay Sandbox (Payouts)
+### Build Stack Table
+
+| Layer | Stack |
+| :--- | :--- |
+| Mobile / Telemetry | React Native, Expo, Background Geolocation & Sensor SDK |
+| Frontend UI | Next.js Dashboard, WhatsApp Business API (Twilio / Meta) |
+| Backend Engine | Python (FastAPI), Node.js (Event Triggers) |
+| AI & Data | TimeGPT/Chronos API, Llama-3, Neo4j, PyTorch Geometric |
+| Database | PostgreSQL |
+| Integrations | OpenWeather API, TomTom Traffic API, Razorpay Sandbox |
+| Build & Deploy | Docker, AWS, GitHub Actions |
 
 ---
 *Built for the Guidewire DEVTrails Hackathon 2026.*
