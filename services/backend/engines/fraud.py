@@ -13,7 +13,6 @@ Returns a fraud_score (0.0=legit, 1.0=definite fraud) and list of flags.
 import math
 from datetime import datetime, timedelta
 from typing import Optional
-from neo4j import AsyncGraphDatabase
 from config import get_settings
 
 settings = get_settings()
@@ -29,10 +28,16 @@ _driver = None
 def _get_neo4j_driver():
     global _driver
     if _driver is None:
-        _driver = AsyncGraphDatabase.driver(
-            settings.neo4j_uri,
-            auth=(settings.neo4j_user, settings.neo4j_password),
-        )
+        try:
+            # Lazy import prevents startup failure on environments where neo4j optional deps
+            # (like pandas) are heavy or unavailable.
+            from neo4j import AsyncGraphDatabase
+            _driver = AsyncGraphDatabase.driver(
+                settings.neo4j_uri,
+                auth=(settings.neo4j_user, settings.neo4j_password),
+            )
+        except Exception:
+            _driver = None
     return _driver
 
 
@@ -122,6 +127,8 @@ async def _check_syndicate(h3_hex: str, since: datetime) -> float:
     """
     try:
         driver = _get_neo4j_driver()
+        if driver is None:
+            return 0.0
         window_start = since
         window_end = since + timedelta(minutes=2)
 
@@ -150,6 +157,8 @@ async def push_telemetry_to_neo4j(rider_id: str, h3_hex: str, ts: datetime):
     """Store telemetry node in Neo4j for fraud graph analysis."""
     try:
         driver = _get_neo4j_driver()
+        if driver is None:
+            return
         async with driver.session() as session:
             await session.run(
                 """

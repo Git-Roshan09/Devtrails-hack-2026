@@ -326,7 +326,7 @@ Only include articles with disruption_type != "none" and is_current = true.
     return classified
 
 
-async def get_disruption_news() -> list[dict]:
+async def get_disruption_news(hours: int = 6) -> list[dict]:
     """
     Main function: Scrape all sources, classify, and return disruption events.
     Called by the monitoring agent periodically.
