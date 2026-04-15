@@ -83,6 +83,13 @@ class PANVerifyRequest(BaseModel):
     dob: str  # YYYY-MM-DD
 
 
+class MockKYCVerifyRequest(BaseModel):
+    rider_id: str
+    full_name: str
+    aadhaar_last4: str
+    consent: bool
+
+
 # ══════════════════════════════════════════════════════════════
 # KYC STATUS
 # ══════════════════════════════════════════════════════════════
@@ -301,6 +308,42 @@ async def quick_kyc(
         }
     else:
         raise HTTPException(status_code=400, detail=upi_result.error)
+
+
+@router.post("/mock-verify")
+async def mock_verify_kyc(
+    request: MockKYCVerifyRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Mock KYC endpoint for mobile app demo flow.
+    Verifies basic fields and marks rider identity KYC as complete.
+    """
+    rider = await db.get(Rider, UUID(request.rider_id))
+    if not rider:
+        raise HTTPException(status_code=404, detail="Rider not found")
+
+    if not request.consent:
+        raise HTTPException(status_code=400, detail="Consent is required")
+    if not request.full_name or len(request.full_name.strip()) < 2:
+        raise HTTPException(status_code=400, detail="Valid full name is required")
+    if not request.aadhaar_last4.isdigit() or len(request.aadhaar_last4) != 4:
+        raise HTTPException(status_code=400, detail="Aadhaar last 4 digits must be numeric")
+
+    rider.name = request.full_name.strip()
+    rider.aadhar_verified = True
+    rider.masked_aadhar = f"XXXX-XXXX-{request.aadhaar_last4}"
+    rider.kyc_verified_at = datetime.utcnow()
+    await db.commit()
+    await db.refresh(rider)
+
+    return {
+        "success": True,
+        "message": "Mock KYC verification completed",
+        "rider_id": str(rider.id),
+        "masked_aadhar": rider.masked_aadhar,
+        "kyc_verified_at": rider.kyc_verified_at.isoformat() if rider.kyc_verified_at else None,
+    }
 
 
 @router.post("/pan/verify")

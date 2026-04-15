@@ -73,7 +73,7 @@ async def verify_token(authorization: str = Header(None)) -> dict:
             # JWT has 3 parts: header.payload.signature
             payload = token.split('.')[1]
             # Add padding if needed
-            payload += '=' * (4 - len(payload) % 4)
+            payload += '=' * (-len(payload) % 4)
             decoded = json.loads(base64.urlsafe_b64decode(payload))
             return {"uid": decoded.get("user_id") or decoded.get("sub")}
         except Exception as e:
@@ -119,7 +119,7 @@ async def sync_firebase_user(data: SyncRequest, db: AsyncSession = Depends(get_d
         import json
         try:
             payload = data.firebase_token.split('.')[1]
-            payload += '=' * (4 - len(payload) % 4)
+            payload += '=' * (-len(payload) % 4)
             decoded = json.loads(base64.urlsafe_b64decode(payload))
             firebase_uid = decoded.get("user_id") or decoded.get("sub")
         except Exception as e:
