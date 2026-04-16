@@ -101,6 +101,8 @@ class DisruptionResponse(BaseModel):
     h3_hex: str
     confidence: float
     status: str
+    severity: Optional[str]
+    composite_score: Optional[float]
     trigger_source: str
     created_at: datetime
     resolved_at: Optional[datetime]
@@ -112,6 +114,9 @@ class CreateDisruptionRequest(BaseModel):
     h3_hex: Optional[str] = None
     confidence: float = 0.8
     trigger_source: str = "manual"
+    severity: Optional[str] = None  # auto-classified if not provided
+    rain_mm: Optional[float] = None
+    traffic_kmh: Optional[float] = None
 
 
 class ScanResponse(BaseModel):
@@ -364,6 +369,8 @@ async def list_disruptions(
             h3_hex=d.h3_hex,
             confidence=d.confidence,
             status=d.status.value if d.status else "unknown",
+            severity=d.severity.value if d.severity else None,
+            composite_score=float(d.composite_score) if d.composite_score else None,
             trigger_source=d.trigger_source or "unknown",
             created_at=d.created_at,
             resolved_at=d.resolved_at,
@@ -398,6 +405,8 @@ async def get_active_disruptions(
             h3_hex=d.h3_hex,
             confidence=d.confidence,
             status=d.status.value if d.status else "active",
+            severity=d.severity.value if d.severity else None,
+            composite_score=float(d.composite_score) if d.composite_score else None,
             trigger_source=d.trigger_source or "unknown",
             created_at=d.created_at,
             resolved_at=d.resolved_at,
@@ -424,12 +433,30 @@ async def create_manual_disruption(
         else:
             h3_hex = "manual_zone"
     
+    # Auto-classify severity
+    from engines.severity import compute_composite_severity, classify_severity
+    composite_score = compute_composite_severity(
+        rain_mm=float(request.rain_mm or 0),
+        traffic_kmh=float(request.traffic_kmh or 999),
+        social_confidence=float(request.confidence),
+        duration_hours=0,
+    )
+    from models import DisruptionSeverity
+    if request.severity:
+        severity = DisruptionSeverity(request.severity)
+    else:
+        severity = classify_severity(composite_score)
+
     disruption = DisruptionEvent(
         event_type=request.event_type,
         h3_hex=h3_hex,
         zone_name=request.zone_name,
+        rain_mm=request.rain_mm,
+        traffic_kmh=request.traffic_kmh,
         confidence=request.confidence,
         trigger_source=request.trigger_source,
+        severity=severity,
+        composite_score=composite_score,
     )
     
     db.add(disruption)
@@ -447,6 +474,8 @@ async def create_manual_disruption(
         h3_hex=disruption.h3_hex,
         confidence=disruption.confidence,
         status="active",
+        severity=disruption.severity.value if disruption.severity else None,
+        composite_score=float(disruption.composite_score) if disruption.composite_score else None,
         trigger_source=disruption.trigger_source,
         created_at=disruption.created_at,
         resolved_at=disruption.resolved_at,

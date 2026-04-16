@@ -21,11 +21,11 @@ router = APIRouter()
 
 # Chennai micro-zone hex grids (Resolution 9)
 CHENNAI_ZONES = {
-    "velachery":    h3.geo_to_h3(12.9789, 80.2180, 9),
-    "omr":          h3.geo_to_h3(12.9010, 80.2279, 9),
-    "t_nagar":      h3.geo_to_h3(13.0418, 80.2341, 9),
-    "anna_nagar":   h3.geo_to_h3(13.0891, 80.2152, 9),
-    "tambaram":     h3.geo_to_h3(12.9249, 80.1000, 9),
+    "velachery":    h3.latlng_to_cell(12.9789, 80.2180, 9),
+    "omr":          h3.latlng_to_cell(12.9010, 80.2279, 9),
+    "t_nagar":      h3.latlng_to_cell(13.0418, 80.2341, 9),
+    "anna_nagar":   h3.latlng_to_cell(13.0891, 80.2152, 9),
+    "tambaram":     h3.latlng_to_cell(12.9249, 80.1000, 9),
 }
 
 
@@ -60,7 +60,8 @@ async def simulate_disruption(
     )
     db.add(event)
     await db.flush()
-
+    # Ensure event is visible to the background task in a separate DB session.
+    await db.commit()
     background_tasks.add_task(process_disruption_claims, str(event.id))
 
     return {
@@ -99,7 +100,7 @@ async def simulate_telemetry(
         # Small random jitter around zone center
         lat = base_lat + random.uniform(-0.002, 0.002)
         lng = base_lng + random.uniform(-0.002, 0.002)
-        h3_hex = h3.geo_to_h3(lat, lng, 9)
+        h3_hex = h3.latlng_to_cell(lat, lng, 9)
 
         log = TelemetryLog(
             rider_id=rider_id,

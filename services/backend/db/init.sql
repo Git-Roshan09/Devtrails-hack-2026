@@ -18,7 +18,14 @@ CREATE TABLE IF NOT EXISTS riders (
     platform        VARCHAR(30) DEFAULT 'zepto',
     home_wifi_ssid  VARCHAR(100),                  -- for fraud: known home WiFi
     is_active       BOOLEAN DEFAULT TRUE,
-    created_at      TIMESTAMPTZ DEFAULT NOW()
+    created_at      TIMESTAMPTZ DEFAULT NOW(),
+    aadhar_verified BOOLEAN DEFAULT FALSE,
+    masked_aadhar   VARCHAR(20),
+    upi_verified    BOOLEAN DEFAULT FALSE,
+    upi_verification_code VARCHAR(10),
+    pan_verified    BOOLEAN DEFAULT FALSE,
+    pan_number      VARCHAR(15),
+    kyc_verified_at TIMESTAMPTZ
 );
 
 -- ─── POLICIES ───────────────────────────────────────────────
@@ -63,6 +70,12 @@ CREATE INDEX idx_telemetry_hex ON telemetry_logs(h3_hex);
 -- ─── DISRUPTION EVENTS ──────────────────────────────────────
 CREATE TYPE disruption_type AS ENUM ('flood', 'traffic_gridlock', 'strike', 'digital_blackout', 'vvip_movement');
 CREATE TYPE disruption_status AS ENUM ('active', 'resolved');
+DO $$
+BEGIN
+    CREATE TYPE disruption_severity AS ENUM ('minor', 'moderate', 'severe', 'catastrophic');
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
 
 CREATE TABLE IF NOT EXISTS disruption_events (
     id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -74,6 +87,8 @@ CREATE TABLE IF NOT EXISTS disruption_events (
     confidence      NUMERIC(5,4),                  -- 0.0–1.0 for social triggers
     trigger_source  VARCHAR(50),                   -- 'openweather+tomtom' / 'llm_nlp'
     status          disruption_status DEFAULT 'active',
+    severity        disruption_severity DEFAULT 'moderate',
+    composite_score NUMERIC(5,2),                  -- 0-100 composite severity index
     started_at      TIMESTAMPTZ DEFAULT NOW(),
     resolved_at     TIMESTAMPTZ
 );
@@ -93,12 +108,36 @@ CREATE TABLE IF NOT EXISTS claims (
     bonus_loss      NUMERIC(8,2) DEFAULT 0,
     total_payout    NUMERIC(8,2),
     fraud_score     NUMERIC(5,4),                  -- 0.0 = legit, 1.0 = fraud
+    severity_multiplier NUMERIC(4,2) DEFAULT 1.0, -- severity payout multiplier
+    rider_feedback_score NUMERIC(2,1),             -- 1=too low, 2=fair, 3=too high
     status          claim_status DEFAULT 'pending',
     fraud_flags     TEXT[],                        -- ['home_wifi', 'stationary_accel']
     appeal_video_url TEXT,
+    audio_proof_url TEXT,
     razorpay_payout_id VARCHAR(100),
     created_at      TIMESTAMPTZ DEFAULT NOW(),
     processed_at    TIMESTAMPTZ
+);
+
+-- ─── SEVERITY SUPPORT TABLES ───────────────────────────────
+CREATE TABLE IF NOT EXISTS hex_risk_profiles (
+    h3_index                     VARCHAR(20) PRIMARY KEY,
+    zone_name                    VARCHAR(100),
+    flood_threshold_mm           NUMERIC(6,2) DEFAULT 30.0,
+    drainage_efficiency          NUMERIC(3,2) DEFAULT 0.5,
+    historical_cancel_correlation NUMERIC(5,4) DEFAULT 0.5,
+    seasonal_adjustment          NUMERIC(4,2) DEFAULT 1.0,
+    last_calibrated_at           TIMESTAMPTZ
+);
+
+CREATE TABLE IF NOT EXISTS rider_velocity_cache (
+    id                      UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    rider_id                UUID REFERENCES riders(id) ON DELETE CASCADE,
+    hour_of_day             INTEGER NOT NULL,
+    day_of_week             INTEGER NOT NULL,
+    avg_deliveries_per_hour NUMERIC(4,2) DEFAULT 0.0,
+    sample_count            INTEGER DEFAULT 0,
+    updated_at              TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- ─── PREMIUM QUOTES (Weekly Forecasts) ──────────────────────
