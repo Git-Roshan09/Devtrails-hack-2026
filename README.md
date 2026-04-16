@@ -258,7 +258,6 @@ A fully automated payout system is a massive target for fraud. We built GigaChad
 
 --- 
 
-
 ## 🚨 🇪‌🇳‌🇹‌🇪‌🇷‌🇵‌🇷‌🇮‌🇸‌🇪‌-🇬‌🇷‌🇦‌🇩‌🇪‌ 🇫‌🇷‌🇦‌🇺‌🇩‌ 🇩‌🇪‌🇹‌🇪‌🇨‌🇹‌🇮‌🇴‌🇳‌
 A fully automated parametric system is highly vulnerable to GPS spoofing. If we just rely on location, a worker sitting at home can spoof their GPS to a flooded zone and collect free money. GigaChad uses multi-layered anomaly detection:
 
