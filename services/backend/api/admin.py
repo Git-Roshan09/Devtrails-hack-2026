@@ -60,7 +60,8 @@ async def simulate_disruption(
     )
     db.add(event)
     await db.flush()
-
+    # Ensure event is visible to the background task in a separate DB session.
+    await db.commit()
     background_tasks.add_task(process_disruption_claims, str(event.id))
 
     return {
