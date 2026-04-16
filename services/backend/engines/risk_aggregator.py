@@ -14,9 +14,9 @@ import asyncio
 from datetime import datetime, timedelta
 from typing import Optional
 from dataclasses import dataclass, field
-import h3
 
 from config import get_settings
+from engines.h3_utils import latlng_to_cell
 from engines.weather_forecaster import (
     get_zone_weather,
     get_all_chennai_weather,
@@ -97,7 +97,7 @@ async def assess_zone_risk(zone: str) -> RiskAssessment:
     zone_info = CHENNAI_ZONES.get(zone, {})
     lat = zone_info.get("lat", settings.chennai_lat)
     lng = zone_info.get("lng", settings.chennai_lng)
-    h3_hex = h3.latlng_to_cell(lat, lng, settings.h3_resolution)
+    h3_hex = latlng_to_cell(lat, lng, settings.h3_resolution)
     
     assessment = RiskAssessment(
         zone=zone,

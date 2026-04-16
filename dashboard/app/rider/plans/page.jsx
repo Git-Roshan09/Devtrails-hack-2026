@@ -27,6 +27,19 @@ const MOCK_CLAIMS = [
   { id: 3, date: "2026-03-20", type: "Strike", zone: "T. Nagar", amount: 0, status: "pending", hours: 3 },
 ];
 
+const MOCK_TRANSACTIONS = [
+  { id: "t1", label: "Flood claim payout", date: "2026-04-02", amount: 300, status: "success" },
+  { id: "t2", label: "Traffic claim payout", date: "2026-03-28", amount: 200, status: "success" },
+  { id: "t3", label: "Weekly premium", date: "2026-03-25", amount: -39, status: "deducted" },
+  { id: "t4", label: "Weekly premium", date: "2026-03-18", amount: -39, status: "deducted" },
+];
+
+const RED_ZONE_ALERTS = [
+  { id: "z1", name: "Perungudi", note: "Waterlogging reported, claims spike zone" },
+  { id: "z2", name: "Velachery Main Road", note: "Traffic gridlock, high idle-risk area" },
+  { id: "z3", name: "T. Nagar Inner Loop", note: "Diversions active, avoid peak hours" },
+];
+
 const MOCK_WEATHER = {
   temp: 32,
   humidity: 78,
@@ -238,6 +251,38 @@ function OverviewTab({ rider, weather, zones, location, currentZone }) {
           ))}
         </div>
       </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-[#111] border border-[#1e1e1e] rounded-2xl p-6">
+          <h3 className="font-bold text-lg mb-4">💸 Recent Transactions</h3>
+          <div className="space-y-3">
+            {MOCK_TRANSACTIONS.map((tx) => (
+              <div key={tx.id} className="flex items-center justify-between rounded-xl bg-[#0a0a0a] p-3 border border-[#1e1e1e]">
+                <div>
+                  <div className="text-sm font-semibold">{tx.label}</div>
+                  <div className="text-xs text-[#777]">{tx.date}</div>
+                </div>
+                <div className={`text-sm font-bold ${tx.amount >= 0 ? "text-[#00e676]" : "text-[#ff7a7a]"}`}>
+                  {tx.amount >= 0 ? "+" : "-"}₹{Math.abs(tx.amount)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-[#111] border border-[#1e1e1e] rounded-2xl p-6">
+          <h3 className="font-bold text-lg mb-1">🚨 Red Zone Warnings</h3>
+          <p className="text-sm text-[#777] mb-4">Avoid these areas when possible to reduce disruption risk.</p>
+          <div className="space-y-3">
+            {RED_ZONE_ALERTS.map((zone) => (
+              <div key={zone.id} className="rounded-xl border border-red-500/30 bg-red-500/10 p-3">
+                <div className="text-sm font-bold text-red-300">{zone.name}</div>
+                <div className="text-xs text-red-200 mt-1">{zone.note}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -374,6 +419,11 @@ function SettingsTab({ rider }) {
         <SettingRow label="Aadhaar" value="Verified ✓" valueColor="#00e676" />
         <SettingRow label="UPI ID" value="hari@paytm ✓" valueColor="#00e676" />
         <SettingRow label="PAN" value="Not Required" valueColor="#888" />
+        <div className="pt-2">
+          <button className="w-full py-2 rounded-lg border border-[#2d2d2d] text-sm font-bold hover:bg-[#1a1a1a] transition-all">
+            Update Registration Details
+          </button>
+        </div>
       </div>
 
       <div className="bg-[#111] border border-[#1e1e1e] rounded-2xl p-6 space-y-4">

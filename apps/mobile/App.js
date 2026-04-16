@@ -1,1250 +1,848 @@
-/**
- * GigaChad Telemetry App
- * ──────────────────────
- * Expo Go compatible — no custom native build needed.
- * Features:
- * - GPS tracking (real or simulated)
- * - Claims history with status
- * - Video appeal for soft-flagged claims
- * - Tab navigation
- */
-
 import * as TaskManager from "expo-task-manager";
 import * as Location from "expo-location";
-import * as ImagePicker from "expo-image-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
+import React, { useEffect, useMemo, useState } from "react";
+import { Alert, Animated, FlatList, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import {
-  StyleSheet,
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  FlatList,
-  Platform,
-  Alert,
-  StatusBar,
-  Animated,
-  TextInput,
-  Modal,
-  RefreshControl,
-} from "react-native";
-import { signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail } from "firebase/auth";
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  signOut,
+  updateProfile,
+} from "firebase/auth";
 import { auth } from "./firebase";
+import AuthPanel from "./src/components/AuthPanel";
+import BasicInfoGate from "./src/components/BasicInfoGate";
+import WalletCard from "./src/components/WalletCard";
+import WarningsCard from "./src/components/WarningsCard";
+import SubmitClaimModal from "./src/components/SubmitClaimModal";
+import { RED_ZONES } from "./src/data/zones";
 
-
-const BACKEND_URL = "https://neat-tires-glow.loca.lt"; 
-// Note: We now fetch rider id from Postgres via Firebase UID, 
-// so hardcoded RIDER_ID is no longer strictly used, but we keep the var for API calls if needed.
-
+const BACKEND_URL = "https://grumpy-moles-wash.loca.lt";
 const BG_TASK_NAME = "GIGACHAD_GPS_TASK";
 const PING_INTERVAL_SECONDS = 10;
 const RIDER_ID_STORAGE_KEY = "gc_rider_id";
-const KYC_STORAGE_PREFIX = "gc_kyc_";
-const MOCK_LOCATION_BLOCK_KEY = "gc_mock_location_block";
+const PROFILE_PREFIX = "gc_profile_";
 
-
-TaskManager.defineTask(BG_TASK_NAME, async ({ data, error }) => {
-  if (error) {
-    console.log("[BG Task] Error:", error.message);
-    return;
-  }
-  if (data) {
-    const { locations } = data;
-    const loc = locations[0];
-    if (loc) {
-      if (Platform.OS === "android" && loc.mocked) {
-        await AsyncStorage.setItem(MOCK_LOCATION_BLOCK_KEY, "true");
-        return;
-      }
-      const riderId = await AsyncStorage.getItem(RIDER_ID_STORAGE_KEY);
-      if (!riderId) return;
-      await sendPing(loc.coords.latitude, loc.coords.longitude, false, riderId);
-    }
-  }
-});
-
-// ─── SEND PING ───────────────────────────────────────────────
-async function sendPing(lat, lng, isFake, riderId) {
+async function sendPing(lat, lng, riderId) {
   try {
-    const body = JSON.stringify({
-      rider_id: riderId || "demo-uuid",
-      lat,
-      lng,
-      speed_kmh: 0,
-      wifi_ssid: "GigaChad_Field",
-      network_type: "4G",
-      is_shift_active: true,
-      is_fake: isFake,
-    });
-
     const resp = await fetch(`${BACKEND_URL}/api/telemetry/ping`, {
       method: "POST",
-      headers: { 
+      headers: {
         "Content-Type": "application/json",
-        "Bypass-Tunnel-Reminder": "true" // Required by localtunnel to avoid the warning page
+        "Bypass-Tunnel-Reminder": "true",
       },
-      body,
+      body: JSON.stringify({
+        rider_id: riderId,
+        lat,
+        lng,
+        speed_kmh: 0,
+        wifi_ssid: "GigaChad_Field",
+        network_type: "4G",
+        is_shift_active: true,
+        is_fake: false,
+      }),
     });
 
-    const ok = resp.status === 201 || resp.status === 200;
-    console.log(`[Ping] lat=${lat.toFixed(4)} lng=${lng.toFixed(4)} fake=${isFake} → ${ok ? "✅" : "❌ " + resp.status}`);
-    return ok;
+    return resp.ok;
   } catch (e) {
-    console.log("[Ping] Network error:", e.message);
     return false;
   }
 }
 
-// ─── APP ─────────────────────────────────────────────────────
+TaskManager.defineTask(BG_TASK_NAME, async ({ data, error }) => {
+  if (error || !data?.locations?.length) return;
+  const loc = data.locations[0];
+  const riderId = await AsyncStorage.getItem(RIDER_ID_STORAGE_KEY);
+  if (!riderId) return;
+  await sendPing(loc.coords.latitude, loc.coords.longitude, riderId);
+});
+
 export default function App() {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [dbRiderId, setDbRiderId] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("tracking"); // "tracking" or "claims"
+  const [authMode, setAuthMode] = useState("login");
+  const [authBusy, setAuthBusy] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
 
-  // Login form state
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loginError, setLoginError] = useState("");
+  const [dbRiderId, setDbRiderId] = useState("");
+  const [profile, setProfile] = useState({ name: "", phone: "", zone: "", ready: false });
+  const [activeTab, setActiveTab] = useState("home");
 
-  // Tracking state
-  const [isTracking, setIsTracking] = useState(false);
-  const [lastPing, setLastPing] = useState(null);
+  const [tracking, setTracking] = useState(false);
   const [pingCount, setPingCount] = useState(0);
-  const [status, setStatus] = useState("idle");
-  const [mockLocationDetected, setMockLocationDetected] = useState(false);
-  const [kycLoading, setKycLoading] = useState(true);
-  const [kycVerified, setKycVerified] = useState(false);
-  const [kycName, setKycName] = useState("");
-  const [kycAadhaarLast4, setKycAadhaarLast4] = useState("");
-  const [kycConsent, setKycConsent] = useState(false);
-  const [kycError, setKycError] = useState("");
+  const [lastPing, setLastPing] = useState("");
+  const [riderLocation, setRiderLocation] = useState({ lat: 12.9789, lng: 80.218 });
 
-  // Claims state
   const [claims, setClaims] = useState([]);
-  const [claimsLoading, setClaimsLoading] = useState(false);
-  const [claimsRefreshing, setClaimsRefreshing] = useState(false);
-  const [selectedClaim, setSelectedClaim] = useState(null);
-  const [claimStats, setClaimStats] = useState({ total: 0, paid: 0, pending: 0 });
-  const [currentCoords, setCurrentCoords] = useState(null);
+  const [claimModalVisible, setClaimModalVisible] = useState(false);
+  const [shiftSummary, setShiftSummary] = useState({ visible: false, step: -1, label: "", done: false, pings: 0 });
+  const [liveMsgIdx, setLiveMsgIdx] = useState(0);
+  const liveDotAnim = React.useRef(new Animated.Value(0.3)).current;
 
-  const dotAnim = useRef(new Animated.Value(1)).current;
-
-  async function syncRiderAccount(user) {
+  const syncRiderAccount = async (user) => {
     const token = await user.getIdToken();
-    const res = await fetch(`${BACKEND_URL}/api/auth/sync`, {
+    const response = await fetch(`${BACKEND_URL}/api/auth/sync`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "Bypass-Tunnel-Reminder": "true" },
-      body: JSON.stringify({ firebase_token: token, name: user.email, phone: "mobile" }),
+      headers: {
+        "Content-Type": "application/json",
+        "Bypass-Tunnel-Reminder": "true",
+      },
+      body: JSON.stringify({
+        firebase_token: token,
+        name: user.displayName || user.email,
+        phone: "mobile",
+      }),
     });
 
-    const payload = await res.json().catch(() => ({}));
-    if (!res.ok || !payload?.id) {
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || !payload?.id) {
       throw new Error(payload?.detail || "Account sync failed");
     }
 
     setDbRiderId(payload.id);
     await AsyncStorage.setItem(RIDER_ID_STORAGE_KEY, payload.id);
     return payload.id;
-  }
+  };
+
+  const loadProfile = async (uid) => {
+    const raw = await AsyncStorage.getItem(`${PROFILE_PREFIX}${uid}`);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    setProfile(parsed);
+  };
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
-      if (user) {
-        setKycLoading(true);
-        // Sync with backend to get postgres Rider ID
-        try {
-          await syncRiderAccount(user);
-        } catch(e) {
-          console.error("Backend auth sync failed:", e);
-          const cachedRiderId = await AsyncStorage.getItem(RIDER_ID_STORAGE_KEY);
-          if (cachedRiderId) setDbRiderId(cachedRiderId);
-        }
-        try {
-          const kycValue = await AsyncStorage.getItem(`${KYC_STORAGE_PREFIX}${user.uid}`);
-          setKycVerified(kycValue === "verified");
-        } catch (e) {
-          setKycVerified(false);
-        } finally {
-          setKycLoading(false);
-        }
-      } else {
-        setDbRiderId(null);
-        setKycVerified(false);
-        setKycLoading(false);
+      if (!user) {
+        setDbRiderId("");
+        setProfile({ name: "", phone: "", zone: "", ready: false });
+        setAuthLoading(false);
+        return;
       }
+
+      try {
+        await syncRiderAccount(user);
+      } catch (e) {
+        const cachedRiderId = await AsyncStorage.getItem(RIDER_ID_STORAGE_KEY);
+        if (cachedRiderId) setDbRiderId(cachedRiderId);
+      }
+
+      await loadProfile(user.uid);
       setAuthLoading(false);
     });
+
     return unsub;
   }, []);
 
-  const handleLogin = async () => {
+  const login = async ({ email, password }) => {
+    setAuthBusy(true);
     try {
-      setLoginError("");
       await signInWithEmailAndPassword(auth, email, password);
-    } catch(err) {
-      setLoginError("Invalid credentials");
+    } catch (e) {
+      throw new Error("Invalid credentials.");
+    } finally {
+      setAuthBusy(false);
     }
   };
 
-  const handleForgotPassword = async () => {
+  const register = async ({ name, email, password }) => {
+    setAuthBusy(true);
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      await updateProfile(cred.user, { displayName: name });
+      await syncRiderAccount(cred.user);
+    } catch (e) {
+      throw new Error("Registration failed. Try a different email.");
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
+  const forgotPassword = async (email) => {
     if (!email) {
-      Alert.alert("Email Required", "Please enter your email address first.");
+      Alert.alert("Enter email", "Type your email first and try again.");
       return;
     }
     try {
       await sendPasswordResetEmail(auth, email);
-      Alert.alert("Password Reset", "A password reset link has been sent to your email.", [{ text: "OK" }]);
-    } catch(err) {
-      if (err.code === "auth/user-not-found") {
-        Alert.alert("Error", "No account found with this email.");
-      } else {
-        Alert.alert("Error", "Failed to send reset email. Try again.");
-      }
-    }
-  };
-
-  const handleCompleteKyc = async () => {
-    setKycError("");
-    if (!currentUser) return;
-    if (!kycName.trim()) {
-      setKycError("Please enter your full name.");
-      return;
-    }
-    if (!/^\d{4}$/.test(kycAadhaarLast4)) {
-      setKycError("Enter valid Aadhaar last 4 digits.");
-      return;
-    }
-    if (!kycConsent) {
-      setKycError("Please accept consent to continue.");
-      return;
-    }
-
-    try {
-      let riderId = dbRiderId;
-      if (!riderId) {
-        riderId = await syncRiderAccount(currentUser);
-      }
-
-      const response = await fetch(`${BACKEND_URL}/api/kyc/mock-verify`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Bypass-Tunnel-Reminder": "true",
-        },
-        body: JSON.stringify({
-          rider_id: riderId,
-          full_name: kycName.trim(),
-          aadhaar_last4: kycAadhaarLast4,
-          consent: kycConsent,
-        }),
-      });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        setKycError(payload.detail || "KYC verification failed. Try again.");
-        return;
-      }
-
-      await AsyncStorage.setItem(`${KYC_STORAGE_PREFIX}${currentUser.uid}`, "verified");
-      setKycVerified(true);
-      Alert.alert("KYC Verified", payload.message || "Your KYC is verified. You can now start background protection.");
+      Alert.alert("Reset sent", "Check your inbox for the reset link.");
     } catch (e) {
-      setKycError(e?.message || "Failed to verify KYC. Please try again.");
+      Alert.alert("Failed", "Could not send reset email.");
     }
   };
 
-  const handleLogout = async () => {
-    await stopTracking();
-    await AsyncStorage.removeItem(RIDER_ID_STORAGE_KEY);
-    await AsyncStorage.removeItem(MOCK_LOCATION_BLOCK_KEY);
-    await signOut(auth);
-  };
-
-  // ─── CLAIMS FUNCTIONS ─────────────────────────────────────────
-  const fetchClaims = useCallback(async () => {
-    if (!dbRiderId) return;
-    setClaimsLoading(true);
-    try {
-      const res = await fetch(`${BACKEND_URL}/api/claims/rider/${dbRiderId}`, {
-        headers: { "Bypass-Tunnel-Reminder": "true" },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setClaims(data);
-        
-        const totalPaid = data
-          .filter((c) => c.status === "paid")
-          .reduce((sum, c) => sum + (c.total_payout || 0), 0);
-        const pendingCount = data.filter(
-          (c) => c.status === "pending" || c.status === "approved"
-        ).length;
-        
-        setClaimStats({ total: data.length, paid: totalPaid, pending: pendingCount });
-      }
-    } catch (e) {
-      console.error("Failed to fetch claims:", e);
-    } finally {
-      setClaimsLoading(false);
-      setClaimsRefreshing(false);
-    }
-  }, [dbRiderId]);
-
-  useEffect(() => {
-    if (activeTab === "claims" && dbRiderId) {
-      fetchClaims();
-    }
-  }, [activeTab, dbRiderId, fetchClaims]);
-
-  const handleVideoAppeal = async (claim) => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Permission Required", "We need access to your photos to upload the appeal video.");
+  const saveBasicInfo = async () => {
+    if (!profile.name.trim() || !/^\d{10}$/.test(profile.phone) || !profile.zone.trim()) {
+      Alert.alert("Missing details", "Please enter name, 10-digit phone, and zone.");
       return;
     }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
-      allowsEditing: true,
-      quality: 0.5,
-      videoMaxDuration: 15,
-    });
-
-    if (!result.canceled && result.assets[0]) {
-      Alert.alert("Uploading Video", "Your appeal video is being uploaded. You'll receive a WhatsApp notification once reviewed.", [{ text: "OK" }]);
-      
-      try {
-        const formData = new FormData();
-        formData.append("video", {
-          uri: result.assets[0].uri,
-          type: "video/mp4",
-          name: "appeal.mp4",
-        });
-
-        await fetch(`${BACKEND_URL}/api/claims/${claim.id}/appeal`, {
-          method: "POST",
-          headers: { "Bypass-Tunnel-Reminder": "true" },
-          body: formData,
-        });
-        Alert.alert("Success", "Appeal submitted! We'll review within 2 hours.");
-        fetchClaims();
-      } catch (e) {
-        Alert.alert("Error", "Failed to upload video. Please try WhatsApp.");
-      }
-    }
+    const next = { ...profile, ready: true };
+    setProfile(next);
+    await AsyncStorage.setItem(`${PROFILE_PREFIX}${currentUser.uid}`, JSON.stringify(next));
   };
 
-  // ─── FILE NEW CLAIM WITH PROOF ────────────────────────────────
-  const [showNewClaimModal, setShowNewClaimModal] = useState(false);
-  const [newClaimType, setNewClaimType] = useState("flood");
-  const [newClaimDescription, setNewClaimDescription] = useState("");
-  const [newClaimEvidence, setNewClaimEvidence] = useState(null);
-  const [submittingClaim, setSubmittingClaim] = useState(false);
-
-  const handlePickEvidence = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Permission Required", "We need access to your photos to upload evidence.");
-      return;
-    }
-
-    Alert.alert(
-      "Select Evidence Type",
-      "Choose how you want to provide proof",
-      [
-        {
-          text: "📷 Take Photo",
-          onPress: async () => {
-            const { status: camStatus } = await ImagePicker.requestCameraPermissionsAsync();
-            if (camStatus !== "granted") {
-              Alert.alert("Permission Required", "Camera access is needed.");
-              return;
-            }
-            const result = await ImagePicker.launchCameraAsync({
-              allowsEditing: true,
-              quality: 0.7,
-            });
-            if (!result.canceled && result.assets[0]) {
-              setNewClaimEvidence({ type: "photo", uri: result.assets[0].uri });
-            }
-          }
-        },
-        {
-          text: "🖼️ Choose Photo",
-          onPress: async () => {
-            const result = await ImagePicker.launchImageLibraryAsync({
-              mediaTypes: ImagePicker.MediaTypeOptions.Images,
-              allowsEditing: true,
-              quality: 0.7,
-            });
-            if (!result.canceled && result.assets[0]) {
-              setNewClaimEvidence({ type: "photo", uri: result.assets[0].uri });
-            }
-          }
-        },
-        {
-          text: "🎥 Record Video",
-          onPress: async () => {
-            const { status: camStatus } = await ImagePicker.requestCameraPermissionsAsync();
-            if (camStatus !== "granted") {
-              Alert.alert("Permission Required", "Camera access is needed.");
-              return;
-            }
-            const result = await ImagePicker.launchCameraAsync({
-              mediaTypes: ImagePicker.MediaTypeOptions.Videos,
-              allowsEditing: true,
-              quality: 0.5,
-              videoMaxDuration: 30,
-            });
-            if (!result.canceled && result.assets[0]) {
-              setNewClaimEvidence({ type: "video", uri: result.assets[0].uri });
-            }
-          }
-        },
-        { text: "Cancel", style: "cancel" }
-      ]
-    );
-  };
-
-  const handleSubmitNewClaim = async () => {
+  const startTracking = async () => {
     if (!dbRiderId) {
-      Alert.alert("Error", "Not connected to backend. Please check your connection.");
-      return;
-    }
-    
-    setSubmittingClaim(true);
-    try {
-      // Prepare form data
-      const formData = new FormData();
-      formData.append("rider_id", dbRiderId);
-      formData.append("disruption_type", newClaimType);
-      formData.append("description", newClaimDescription);
-      formData.append("zone", "detected");
-      
-      if (currentCoords) {
-        formData.append("lat", currentCoords.lat);
-        formData.append("lng", currentCoords.lng);
-      }
-      
-      if (newClaimEvidence) {
-        formData.append("evidence", {
-          uri: newClaimEvidence.uri,
-          type: newClaimEvidence.type === "video" ? "video/mp4" : "image/jpeg",
-          name: newClaimEvidence.type === "video" ? "evidence.mp4" : "evidence.jpg",
-        });
-      }
-
-      const response = await fetch(`${BACKEND_URL}/api/claims/submit`, {
-        method: "POST",
-        headers: {
-          "Bypass-Tunnel-Reminder": "true",
-        },
-        body: formData,
-      });
-
-      if (response.ok) {
-        Alert.alert(
-          "✅ Claim Submitted!",
-          "Your claim is being processed. You'll receive a WhatsApp notification once approved.",
-          [{ text: "OK" }]
-        );
-        setShowNewClaimModal(false);
-        setNewClaimType("flood");
-        setNewClaimDescription("");
-        setNewClaimEvidence(null);
-        fetchClaims();
-      } else {
-        const errorData = await response.json();
-        Alert.alert("Error", errorData.detail || "Failed to submit claim. Try again.");
-      }
-    } catch (e) {
-      console.error("Claim submission error:", e);
-      Alert.alert("Error", "Network error. Please check your connection.");
-    } finally {
-      setSubmittingClaim(false);
-    }
-  };
-
-  // Pulse animation when tracking
-  useEffect(() => {
-    if (isTracking) {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(dotAnim, { toValue: 0.2, duration: 700, useNativeDriver: true }),
-          Animated.timing(dotAnim, { toValue: 1.0, duration: 700, useNativeDriver: true }),
-        ])
-      ).start();
-    } else {
-      dotAnim.stopAnimation();
-      dotAnim.setValue(1);
-    }
-  }, [isTracking]);
-
-  async function startTracking() {
-    if (!kycVerified) {
-      Alert.alert("KYC Required", "Complete KYC verification to start live background protection.");
-      return;
-    }
-    if (!dbRiderId) {
-      Alert.alert("Setup Required", "Failed to retrieve your actual rider UUID from the backend. Are you connected to the network?");
+      Alert.alert("Connection required", "Could not find rider id from backend.");
       return;
     }
 
-    // Request permissions
     const fg = await Location.requestForegroundPermissionsAsync();
     if (fg.status !== "granted") {
-      Alert.alert("Permission Denied", "Location permission is required to protect your income.");
-      setStatus("error");
+      Alert.alert("Location denied", "Allow location to start shift tracking.");
       return;
     }
 
     const current = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-    if (Platform.OS === "android" && current.mocked) {
-      setMockLocationDetected(true);
-      setStatus("error");
-      Alert.alert(
-        "Mock Location Detected",
-        "Turn off mock location in Android developer settings to continue using GigaChad."
-      );
-      return;
-    }
-    const nowOk = await sendPing(current.coords.latitude, current.coords.longitude, false, dbRiderId);
-    if (nowOk) {
-      setCurrentCoords({ lat: current.coords.latitude.toFixed(5), lng: current.coords.longitude.toFixed(5) });
+    const lat = current.coords.latitude;
+    const lng = current.coords.longitude;
+
+    const ok = await sendPing(lat, lng, dbRiderId);
+    if (ok) {
+      setPingCount((p) => p + 1);
       setLastPing(new Date().toLocaleTimeString());
-      setPingCount((c) => c + 1);
+      setRiderLocation({ lat, lng });
     }
 
-    const bg = await Location.requestBackgroundPermissionsAsync();
-    if (bg.status !== "granted") {
-      Alert.alert(
-        "Background Location",
-        "Background location permission is needed to protect you while your screen is off. Grant it in Settings.",
-        [{ text: "OK" }]
-      );
-    }
-
+    await Location.requestBackgroundPermissionsAsync();
     await Location.startLocationUpdatesAsync(BG_TASK_NAME, {
       accuracy: Location.Accuracy.Balanced,
       timeInterval: PING_INTERVAL_SECONDS * 1000,
-      distanceInterval: 50, // metres
-      showsBackgroundLocationIndicator: true,
+      distanceInterval: 50,
       foregroundService: {
-        notificationTitle: "GigaChad Shield Active 🛡️",
-        notificationBody: "Your income is protected. Tracking location.",
-        notificationColor: "#00e676",
+        notificationTitle: "GigaChad tracking active",
+        notificationBody: "Your shift protection is running",
+        notificationColor: "#00d26a",
       },
     });
 
-    setIsTracking(true);
-    setMockLocationDetected(false);
-    setStatus("tracking");
-  }
+    setTracking(true);
+  };
 
-  async function stopTracking() {
-    // Stop real background task if running
+  const stopTracking = async () => {
     const hasTask = await TaskManager.isTaskRegisteredAsync(BG_TASK_NAME).catch(() => false);
     if (hasTask) {
       await Location.stopLocationUpdatesAsync(BG_TASK_NAME).catch(() => {});
     }
+    setTracking(false);
+    loadClaims();
+  };
 
-    setIsTracking(false);
-    setStatus("idle");
-  }
-
-  
+  const loadClaims = async () => {
+    if (!dbRiderId) return;
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/claims/rider/${dbRiderId}`, {
+        headers: { "Bypass-Tunnel-Reminder": "true" },
+      });
+      if (!response.ok) return;
+      const data = await response.json();
+      setClaims(Array.isArray(data) ? data : []);
+    } catch (e) {}
+  };
 
   useEffect(() => {
-    (async () => {
-      const flagged = await AsyncStorage.getItem(MOCK_LOCATION_BLOCK_KEY);
-      if (flagged === "true") {
-        setMockLocationDetected(true);
-        setStatus("error");
-      }
-    })();
-  }, []);
+    if (dbRiderId) {
+      loadClaims();
+    }
+  }, [dbRiderId]);
 
-  const statusColor = { idle: "#555", tracking: "#00e676", error: "#f44336" }[status];
-  const statusLabel = mockLocationDetected
-    ? "● Mock GPS Detected"
-    : { idle: "● Idle", tracking: "● Broadcasting", error: "● Error" }[status];
+  const LIVE_MSGS = [
+    "Analysing your zone for disruptions...",
+    "Monitoring rain & traffic conditions...",
+    "Watching for flood alerts nearby...",
+    "AI shield is active ✔ You're covered",
+    "Checking road conditions ahead...",
+    "Ride safe — GigaChad has your back 🛡️",
+  ];
 
-  // ── Render Loading or Login screen if not auth'd ─────────
-  if (authLoading) return <View style={[s.safe, {justifyContent: 'center', alignItems: 'center'}]}><Text style={{color:'#fff', textAlign:'center'}}>Loading...</Text></View>;
-  
-  if (!currentUser) {
-    return (
-      <SafeAreaView style={[s.safe, {justifyContent: 'center', padding: 20}]}>
-        <StatusBar barStyle="light-content" backgroundColor="#000" />
-        <Text style={[s.logo, {textAlign:'center', marginBottom: 10}]}>🛡️ GigaChad</Text>
-        <Text style={[s.sub, {textAlign:'center', marginBottom: 40}]}>Mobile Telemetry Gateway</Text>
-        
-        <View style={s.card}>
-          {loginError ? <Text style={{color:'red', marginBottom: 10}}>{loginError}</Text> : null}
-          <Text style={s.cardTitle}>EMAIL</Text>
-          <TextInput 
-            style={s.input} 
-            placeholder="rider@gigachad.com" 
-            placeholderTextColor="#555"
-            value={email} onChangeText={setEmail} autoCapitalize="none" 
-          />
-          <Text style={[s.cardTitle, {marginTop: 15}]}>PASSWORD</Text>
-          <TextInput 
-            style={s.input} 
-            placeholder="••••••••" 
-            placeholderTextColor="#555"
-            secureTextEntry 
-            value={password} onChangeText={setPassword} 
-          />
-          <TouchableOpacity style={s.ctaBtn} onPress={handleLogin}>
-            <Text style={s.ctaTxt}>SIGN IN</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleForgotPassword} style={{marginTop: 12, alignItems: 'center'}}>
-            <Text style={{color: '#888', fontSize: 13}}>Forgot Password?</Text>
-          </TouchableOpacity>
-        </View>
-        <Text style={s.info}>* If you haven't registered, create an account on the GigaChad Web Platform first.</Text>
-      </SafeAreaView>
+  useEffect(() => {
+    if (!tracking) return;
+    // Cycle messages every 4s
+    const msgTimer = setInterval(() => {
+      setLiveMsgIdx((i) => (i + 1) % LIVE_MSGS.length);
+    }, 4000);
+    // Pulse the dot continuously
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(liveDotAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
+        Animated.timing(liveDotAnim, { toValue: 0.3, duration: 800, useNativeDriver: true }),
+      ])
     );
-  }
+    pulse.start();
+    return () => {
+      clearInterval(msgTimer);
+      pulse.stop();
+    };
+  }, [tracking]);
 
-  if (kycLoading) {
-    return (
-      <SafeAreaView style={[s.safe, { justifyContent: "center", padding: 20 }]}>
-        <Text style={[s.logo, { textAlign: "center", marginBottom: 10 }]}>🛡️ GigaChad</Text>
-        <Text style={[s.sub, { textAlign: "center" }]}>Checking KYC status...</Text>
-      </SafeAreaView>
-    );
-  }
-
-  if (!kycVerified) {
-    return (
-      <SafeAreaView style={[s.safe, { justifyContent: "center", padding: 20 }]}>
-        <StatusBar barStyle="light-content" backgroundColor="#000" />
-        <Text style={[s.logo, { textAlign: "center", marginBottom: 8 }]}>🛡️ GigaChad</Text>
-        <Text style={[s.sub, { textAlign: "center", marginBottom: 26 }]}>Complete KYC to activate protection</Text>
-        <View style={s.card}>
-          {kycError ? <Text style={{ color: "#f44336", marginBottom: 10 }}>{kycError}</Text> : null}
-          <Text style={s.cardTitle}>FULL NAME</Text>
-          <TextInput
-            style={s.input}
-            placeholder="Hari Kumar"
-            placeholderTextColor="#555"
-            value={kycName}
-            onChangeText={setKycName}
-          />
-          <Text style={[s.cardTitle, { marginTop: 14 }]}>AADHAAR LAST 4 DIGITS (MOCK)</Text>
-          <TextInput
-            style={s.input}
-            placeholder="1234"
-            placeholderTextColor="#555"
-            keyboardType="numeric"
-            maxLength={4}
-            value={kycAadhaarLast4}
-            onChangeText={setKycAadhaarLast4}
-          />
-          <TouchableOpacity style={s.checkboxRow} onPress={() => setKycConsent((v) => !v)}>
-            <View style={[s.checkbox, kycConsent && s.checkboxActive]} />
-            <Text style={s.checkboxText}>I consent to KYC verification and shift-only location tracking.</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={s.ctaBtn} onPress={handleCompleteKyc}>
-            <Text style={s.ctaTxt}>VERIFY KYC</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  // ─── TRACKING SCREEN ───────────────────────────────────────────
-  const renderTrackingScreen = () => {
-    return (
-      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
-
-        {/* ── Status Pill ────────────────────── */}
-        <View style={[s.pill, { borderColor: statusColor + "55" }]}>
-          <Animated.View style={[s.dot, { backgroundColor: statusColor, opacity: isTracking ? dotAnim : 1 }]} />
-          <Text style={[s.pillText, { color: statusColor }]}>{statusLabel}</Text>
-          {isTracking && (
-            <Text style={s.pillCount}>{pingCount} pings sent</Text>
-          )}
-        </View>
-
-        <View style={s.card}>
-          <Text style={s.cardTitle}>TRACKING MODE</Text>
-          <Text style={{ color: "#00e676", fontSize: 14, fontWeight: "700" }}>🛰️ Real GPS + Background Protection</Text>
-          <Text style={[s.info, { textAlign: "left", marginBottom: 0, marginTop: 8 }]}>
-            Live location is sent every {PING_INTERVAL_SECONDS}s during active shifts, even with screen off.
-          </Text>
-        </View>
-
-        {/* ── Last Ping Info ─────────────────── */}
-        {lastPing && (
-          <View style={s.card}>
-            <Text style={s.cardTitle}>LAST PING</Text>
-            <Text style={s.pingTime}>{lastPing}</Text>
-            {currentCoords && (
-              <Text style={s.pingCoords}>
-                Lat {currentCoords.lat} · Lng {currentCoords.lng}
-              </Text>
-            )}
-            <Text style={s.pingZone}>Zone: Live Location</Text>
-          </View>
-        )}
-
-        {/* ── Main CTA Button ────────────────── */}
-        <TouchableOpacity
-          style={[s.ctaBtn, isTracking && s.ctaBtnStop]}
-          onPress={isTracking ? stopTracking : startTracking}
-          activeOpacity={0.85}
-        >
-          <Text style={s.ctaIcon}>{isTracking ? "⏹" : "▶"}</Text>
-          <Text style={s.ctaTxt}>
-            {isTracking ? "Stop Shift" : "Start Shift"}
-          </Text>
-        </TouchableOpacity>
-
-        {/* ── Info ───────────────────────────── */}
-        <Text style={s.info}>
-          {`Broadcasting real GPS to backend every ${PING_INTERVAL_SECONDS}s (works in background)`}
-        </Text>
-        {mockLocationDetected && (
-          <Text style={[s.info, { color: "#f44336", marginTop: -4 }]}>
-            Turn off Android mock location (Developer Options) and restart shift tracking.
-          </Text>
-        )}
-
-        <Text style={s.legal}>
-          GigaChad monitors your location only during active shifts to validate income protection claims.
-        </Text>
-
-      </ScrollView>
-    );
-  };
-
-  // ─── CLAIMS SCREEN ─────────────────────────────────────────────
-  const STATUS_COLORS = {
-    pending: { bg: "#FFA500", text: "#000" },
-    approved: { bg: "#00e676", text: "#000" },
-    soft_flagged: { bg: "#FF6B6B", text: "#fff" },
-    denied: { bg: "#f44336", text: "#fff" },
-    paid: { bg: "#4CAF50", text: "#fff" },
-  };
-  const STATUS_EMOJI = { pending: "⏳", approved: "✅", soft_flagged: "🚩", denied: "❌", paid: "💰" };
-
-  const renderClaimItem = ({ item }) => {
-    const statusStyle = STATUS_COLORS[item.status] || STATUS_COLORS.pending;
-    const emoji = STATUS_EMOJI[item.status] || "•";
-    const date = new Date(item.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
-
-    return (
-      <TouchableOpacity style={s.claimCard} onPress={() => setSelectedClaim(item)} activeOpacity={0.7}>
-        <View style={s.claimHeader}>
-          <Text style={s.claimDate}>{date}</Text>
-          <View style={[s.statusBadge, { backgroundColor: statusStyle.bg }]}>
-            <Text style={[s.statusText, { color: statusStyle.text }]}>{emoji} {item.status.replace("_", " ").toUpperCase()}</Text>
-          </View>
-        </View>
-        <View style={s.claimBody}>
-          <Text style={s.claimZone}>📍 {item.zone || item.disruption_type || "Chennai"}</Text>
-          <Text style={s.claimAmount}>₹{item.total_payout?.toFixed(0) || 0}</Text>
-        </View>
-        <View style={s.claimFooter}>
-          <Text style={s.claimType}>{item.disruption_type === "flood" ? "🌊" : "🚧"} {item.disruption_type?.replace("_", " ") || "Disruption"}</Text>
-          <Text style={s.claimHours}>⏱️ {item.idle_hours?.toFixed(1) || 0}h idle</Text>
-        </View>
-        {item.status === "soft_flagged" && (
-          <TouchableOpacity style={s.appealBtn} onPress={() => handleVideoAppeal(item)}>
-            <Text style={s.appealBtnText}>📹 Submit Video Appeal</Text>
-          </TouchableOpacity>
-        )}
-      </TouchableOpacity>
-    );
-  };
-
-  const renderClaimsScreen = () => (
-    <View style={{ flex: 1 }}>
-      {/* Stats Cards */}
-      <View style={s.statsRow}>
-        <View style={s.statCard}>
-          <Text style={s.statValue}>₹{claimStats.paid.toFixed(0)}</Text>
-          <Text style={s.statLabel}>Total Received</Text>
-        </View>
-        <View style={s.statCard}>
-          <Text style={s.statValue}>{claimStats.total}</Text>
-          <Text style={s.statLabel}>Total Claims</Text>
-        </View>
-        <View style={s.statCard}>
-          <Text style={[s.statValue, { color: "#FFA500" }]}>{claimStats.pending}</Text>
-          <Text style={s.statLabel}>Pending</Text>
-        </View>
-      </View>
-
-      {/* New Claim Button */}
-      <TouchableOpacity style={s.newClaimBtn} onPress={() => setShowNewClaimModal(true)}>
-        <Text style={s.newClaimBtnIcon}>📝</Text>
-        <Text style={s.newClaimBtnText}>File New Claim</Text>
-      </TouchableOpacity>
-
-      {/* Claims List */}
-      <FlatList
-        data={claims}
-        keyExtractor={(item) => item.id}
-        renderItem={renderClaimItem}
-        contentContainerStyle={s.listContent}
-        ListEmptyComponent={!claimsLoading && (
-          <View style={s.emptyState}>
-            <Text style={s.emptyEmoji}>🛡️</Text>
-            <Text style={s.emptyTitle}>No Claims Yet</Text>
-            <Text style={s.emptyText}>When you're affected by a disruption, your claim will appear here automatically!</Text>
-          </View>
-        )}
-        refreshControl={
-          <RefreshControl refreshing={claimsRefreshing} onRefresh={() => { setClaimsRefreshing(true); fetchClaims(); }} tintColor="#00e676" />
-        }
-      />
-
-      {/* Claim Detail Modal */}
-      <Modal visible={!!selectedClaim} animationType="slide" transparent onRequestClose={() => setSelectedClaim(null)}>
-        {selectedClaim && (
-          <View style={s.modalOverlay}>
-            <View style={s.modalContent}>
-              <View style={s.modalHeader}>
-                <Text style={s.modalTitle}>Claim Details</Text>
-                <TouchableOpacity onPress={() => setSelectedClaim(null)}><Text style={s.modalClose}>✕</Text></TouchableOpacity>
-              </View>
-              <View style={s.modalBody}>
-                <View style={s.detailRow}><Text style={s.detailLabel}>Status</Text>
-                  <View style={[s.statusBadge, { backgroundColor: STATUS_COLORS[selectedClaim.status]?.bg || "#555" }]}>
-                    <Text style={{ color: STATUS_COLORS[selectedClaim.status]?.text || "#fff", fontWeight: "700" }}>{STATUS_EMOJI[selectedClaim.status]} {selectedClaim.status.toUpperCase()}</Text>
-                  </View>
-                </View>
-                <View style={s.detailRow}><Text style={s.detailLabel}>Payout Amount</Text><Text style={s.detailValue}>₹{selectedClaim.total_payout?.toFixed(0) || 0}</Text></View>
-                <View style={s.detailRow}><Text style={s.detailLabel}>Idle Hours</Text><Text style={s.detailValue}>{selectedClaim.idle_hours?.toFixed(1) || 0} hours</Text></View>
-                <View style={s.detailRow}><Text style={s.detailLabel}>Fraud Score</Text><Text style={[s.detailValue, { color: selectedClaim.fraud_score > 0.5 ? "#FF6B6B" : "#00e676" }]}>{((1 - (selectedClaim.fraud_score || 0)) * 100).toFixed(0)}% trustworthy</Text></View>
-                <View style={s.detailRow}><Text style={s.detailLabel}>Created</Text><Text style={s.detailValue}>{new Date(selectedClaim.created_at).toLocaleString("en-IN")}</Text></View>
-                {selectedClaim.razorpay_payout_id && <View style={s.detailRow}><Text style={s.detailLabel}>Payout ID</Text><Text style={[s.detailValue, { fontSize: 11 }]}>{selectedClaim.razorpay_payout_id}</Text></View>}
-              </View>
-              {selectedClaim.status === "soft_flagged" && (
-                <TouchableOpacity style={[s.appealBtn, { marginTop: 15 }]} onPress={() => { setSelectedClaim(null); handleVideoAppeal(selectedClaim); }}>
-                  <Text style={s.appealBtnText}>📹 Submit Video Appeal</Text>
-                </TouchableOpacity>
-              )}
-              <TouchableOpacity style={s.closeBtn} onPress={() => setSelectedClaim(null)}><Text style={s.closeBtnText}>Close</Text></TouchableOpacity>
-            </View>
-          </View>
-        )}
-      </Modal>
-
-      {/* New Claim Modal */}
-      <Modal visible={showNewClaimModal} animationType="slide" transparent onRequestClose={() => setShowNewClaimModal(false)}>
-        <View style={s.modalOverlay}>
-          <View style={[s.modalContent, { maxHeight: "85%" }]}>
-            <View style={s.modalHeader}>
-              <Text style={s.modalTitle}>📝 File New Claim</Text>
-              <TouchableOpacity onPress={() => setShowNewClaimModal(false)}><Text style={s.modalClose}>✕</Text></TouchableOpacity>
-            </View>
-            
-            <ScrollView showsVerticalScrollIndicator={false}>
-              {/* Disruption Type */}
-              <Text style={[s.cardTitle, { marginTop: 10 }]}>DISRUPTION TYPE</Text>
-              <View style={s.typeRow}>
-                {[
-                  { id: "flood", icon: "🌊", label: "Flood" },
-                  { id: "traffic", icon: "🚗", label: "Traffic" },
-                  { id: "strike", icon: "✊", label: "Strike" },
-                  { id: "vvip", icon: "🚔", label: "VVIP" },
-                ].map((type) => (
-                  <TouchableOpacity
-                    key={type.id}
-                    style={[s.typeBtn, newClaimType === type.id && s.typeBtnActive]}
-                    onPress={() => setNewClaimType(type.id)}
-                  >
-                    <Text style={s.typeIcon}>{type.icon}</Text>
-                    <Text style={[s.typeLabel, newClaimType === type.id && s.typeLabelActive]}>{type.label}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              {/* Description */}
-              <Text style={[s.cardTitle, { marginTop: 20 }]}>DESCRIPTION (OPTIONAL)</Text>
-              <TextInput
-                style={[s.input, { height: 80, textAlignVertical: "top" }]}
-                placeholder="Describe what happened..."
-                placeholderTextColor="#555"
-                multiline
-                value={newClaimDescription}
-                onChangeText={setNewClaimDescription}
-              />
-
-              {/* Evidence Upload */}
-              <Text style={[s.cardTitle, { marginTop: 20 }]}>PROOF / EVIDENCE</Text>
-              <TouchableOpacity style={s.evidenceBtn} onPress={handlePickEvidence}>
-                {newClaimEvidence ? (
-                  <View style={s.evidencePreview}>
-                    <Text style={s.evidenceIcon}>{newClaimEvidence.type === "video" ? "🎥" : "📷"}</Text>
-                    <Text style={s.evidenceText}>
-                      {newClaimEvidence.type === "video" ? "Video attached" : "Photo attached"} ✓
-                    </Text>
-                    <TouchableOpacity onPress={() => setNewClaimEvidence(null)}>
-                      <Text style={{ color: "#f44336", marginLeft: 10 }}>Remove</Text>
-                    </TouchableOpacity>
-                  </View>
-                ) : (
-                  <View style={s.evidenceEmpty}>
-                    <Text style={s.evidenceIcon}>📎</Text>
-                    <Text style={s.evidenceText}>Tap to add photo/video proof</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-              <Text style={[s.info, { marginTop: 8, textAlign: "left" }]}>
-                Adding evidence speeds up claim approval. You can capture: flooded roads, traffic jams, protest images, etc.
-              </Text>
-
-              {/* Location Info */}
-              <View style={[s.card, { marginTop: 20, backgroundColor: "#0a0a0a" }]}>
-                <Text style={s.cardTitle}>📍 YOUR LOCATION</Text>
-                <Text style={{ color: "#00e676", fontSize: 13 }}>
-                  Auto-detected from live GPS
-                </Text>
-                {currentCoords && (
-                  <Text style={{ color: "#555", fontSize: 11, marginTop: 4 }}>
-                    Lat: {currentCoords.lat} · Lng: {currentCoords.lng}
-                  </Text>
-                )}
-              </View>
-
-              {/* Submit Button */}
-              <TouchableOpacity
-                style={[s.ctaBtn, submittingClaim && { opacity: 0.6 }]}
-                onPress={handleSubmitNewClaim}
-                disabled={submittingClaim}
-              >
-                <Text style={s.ctaTxt}>{submittingClaim ? "Submitting..." : "SUBMIT CLAIM"}</Text>
-              </TouchableOpacity>
-
-              <Text style={[s.info, { marginTop: 8 }]}>
-                Claims are verified automatically using GPS, weather data, and AI analysis.
-              </Text>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-    </View>
+  const totalPaid = useMemo(
+    () => claims.filter((c) => c.status === "paid").reduce((sum, c) => sum + (c.total_payout || 0), 0),
+    [claims]
   );
 
-  // ─── MAIN RENDER ───────────────────────────────────────────────
+  const recentTransactions = useMemo(
+    () =>
+      claims
+        .slice()
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .map((claim) => ({
+          id: claim.id,
+          label: `${claim.disruption_type || "Disruption"} claim`,
+          amount: claim.status === "paid" ? Number(claim.total_payout || 0) : -39,
+          date: new Date(claim.created_at).toLocaleDateString("en-IN"),
+        })),
+    [claims]
+  );
+
+  const logout = async () => {
+    await stopTracking();
+    await signOut(auth);
+  };
+
+  if (authLoading) {
+    return (
+      <SafeAreaView style={s.safeCenter}>
+        <Text style={s.loading}>Loading app...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (!currentUser) {
+    return (
+      <SafeAreaView style={s.safe}>
+        <StatusBar barStyle="light-content" backgroundColor="#050505" />
+        <View style={s.authWrap}>
+          <Text style={s.logo}>GigaChad Rider</Text>
+          <Text style={s.subtitle}>Income protection with live telemetry</Text>
+          <AuthPanel
+            mode={authMode}
+            loading={authBusy}
+            onLogin={login}
+            onRegister={register}
+            onForgotPassword={forgotPassword}
+            onSwitchMode={() => setAuthMode((m) => (m === "login" ? "register" : "login"))}
+          />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!profile.ready) {
+    return (
+      <SafeAreaView style={s.safe}>
+        <StatusBar barStyle="light-content" backgroundColor="#050505" />
+        <View style={s.authWrap}>
+          <Text style={s.logo}>Rider Onboarding</Text>
+          <BasicInfoGate
+            profile={profile}
+            onChange={(key, value) => setProfile((p) => ({ ...p, [key]: value }))}
+            onSave={saveBasicInfo}
+          />
+          <TouchableOpacity style={s.logoutBtn} onPress={logout}>
+            <Text style={s.logoutText}>Sign out</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={s.safe}>
-      <StatusBar barStyle="light-content" backgroundColor="#000" />
-      
-      {/* Header */}
+      <StatusBar barStyle="light-content" backgroundColor="#050505" />
+
+      {/* ── End-of-Shift Analysis Overlay ── */}
+      {shiftSummary.visible && (
+        <View style={s.overlay}>
+          {!shiftSummary.done ? (
+            <View style={s.analysisBox}>
+              <View style={s.scanRing}>
+                <Animated.View style={s.scanPulse} />
+                <Text style={s.scanIcon}>🛡️</Text>
+              </View>
+              <Text style={s.analysisTitle}>Analysing your surroundings</Text>
+              <Text style={s.analysisSubtitle}>Checking for any risks in your zone...</Text>
+
+              <View style={s.stepList}>
+                {[
+                  "Scanning zone for disruptions",
+                  "Checking rain & traffic telemetry",
+                  "Reviewing ride patterns",
+                  "Running fraud prevention",
+                  "Calculating payout eligibility",
+                  "All clear ✓",
+                ].map((step, idx) => (
+                  <View key={idx} style={s.stepRow}>
+                    <Text style={[
+                      s.stepDot,
+                      shiftSummary.step >= idx && s.stepDotActive,
+                      idx === shiftSummary.step && s.stepDotCurrent,
+                    ]}>
+                      {shiftSummary.step > idx ? "✓" : shiftSummary.step === idx ? "›" : "·"}
+                    </Text>
+                    <Text style={[
+                      s.stepText,
+                      shiftSummary.step >= idx && s.stepTextActive,
+                    ]}>
+                      {step}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          ) : (
+            <View style={s.summaryBox}>
+              <Text style={s.summaryEmoji}>🏍️</Text>
+              <Text style={s.summaryTitle}>Ride Safe!</Text>
+              <Text style={s.summaryMsg}>
+                Your shift data has been recorded. GigaChad AI is watching over your earnings 24/7.
+              </Text>
+
+              <View style={s.summaryStats}>
+                <View style={s.statChip}>
+                  <Text style={s.statNum}>{shiftSummary.pings}</Text>
+                  <Text style={s.statLabel}>Pings Sent</Text>
+                </View>
+                <View style={s.statChip}>
+                  <Text style={[s.statNum, { color: "#00d26a" }]}>✓ Clear</Text>
+                  <Text style={s.statLabel}>Risk Status</Text>
+                </View>
+                <View style={s.statChip}>
+                  <Text style={[s.statNum, { color: "#64b5f6" }]}>Active</Text>
+                  <Text style={s.statLabel}>Protection</Text>
+                </View>
+              </View>
+
+              <View style={s.safetyTip}>
+                <Text style={s.safetyTipText}>
+                  💡 Tip: Keep your app open during shifts for faster disruption detection.
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                style={s.summaryClose}
+                onPress={() => setShiftSummary({ visible: false, step: -1, label: "", done: false, pings: 0 })}
+              >
+                <Text style={s.summaryCloseText}>Got it, thanks ⚡</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      )}
+
       <View style={s.header}>
-        <TouchableOpacity onPress={handleLogout} style={{position: 'absolute', right: 16, top: 12, zIndex: 10}}>
-          <Text style={{color: '#f44336', fontSize: 12}}>Logout</Text>
+        <View>
+          <Text style={s.headerTitle}>Hi {profile.name.split(" ")[0]}</Text>
+          <Text style={s.headerSub}>Zone: {profile.zone}</Text>
+        </View>
+        <TouchableOpacity onPress={logout}>
+          <Text style={s.logoutText}>Logout</Text>
         </TouchableOpacity>
-        <Text style={s.logo}>⚡ GigaChad</Text>
-        <Text style={s.sub}>{activeTab === "tracking" ? "Income Shield · Telemetry" : "My Claims"}</Text>
       </View>
 
-      {/* Tab Content */}
-      {activeTab === "tracking" ? renderTrackingScreen() : renderClaimsScreen()}
+      <View style={s.tabs}>
+        {[
+          { id: "home", label: "Shift" },
+          { id: "wallet", label: "Wallet" },
+          { id: "warnings", label: "Warnings" },
+          { id: "claims", label: "Claims" },
+        ].map((tab) => (
+          <TouchableOpacity
+            key={tab.id}
+            style={[s.tabBtn, activeTab === tab.id && s.tabBtnActive]}
+            onPress={() => setActiveTab(tab.id)}
+          >
+            <Text style={[s.tabText, activeTab === tab.id && s.tabTextActive]}>{tab.label}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
 
-      {/* Bottom Tab Bar */}
-      <View style={s.tabBar}>
-        <TouchableOpacity style={[s.tabItem, activeTab === "tracking" && s.tabItemActive]} onPress={() => setActiveTab("tracking")}>
-          <Text style={s.tabIcon}>🛰️</Text>
-          <Text style={[s.tabLabel, activeTab === "tracking" && s.tabLabelActive]}>Tracking</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[s.tabItem, activeTab === "claims" && s.tabItemActive]} onPress={() => setActiveTab("claims")}>
-          <Text style={s.tabIcon}>📋</Text>
-          <Text style={[s.tabLabel, activeTab === "claims" && s.tabLabelActive]}>Claims</Text>
-        </TouchableOpacity>
+      <View style={s.body}>
+        {activeTab === "home" ? (
+          <View style={s.card}>
+            <Text style={s.cardTitle}>Live Shift Protection</Text>
+            <Text style={s.meta}>{tracking ? "Broadcasting location" : "Tracking is paused"}</Text>
+            <Text style={s.meta}>Pings sent: {pingCount}</Text>
+            <Text style={s.meta}>Last ping: {lastPing || "No ping yet"}</Text>
+            <Text style={s.meta}>
+              Lat: {Number(riderLocation.lat).toFixed(5)} | Lng: {Number(riderLocation.lng).toFixed(5)}
+            </Text>
+            <TouchableOpacity style={[s.cta, tracking && s.ctaStop]} onPress={tracking ? stopTracking : startTracking}>
+              <Text style={s.ctaText}>{tracking ? "Stop Shift" : "Start Shift"}</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
+        {/* ── Live AI Analysis Banner (only while tracking) ── */}
+        {activeTab === "home" && tracking ? (
+          <View style={s.liveCard}>
+            <View style={s.liveCardRow}>
+              <Animated.View style={[s.liveDot, { opacity: liveDotAnim }]} />
+              <Text style={s.liveMsg}>{LIVE_MSGS[liveMsgIdx]}</Text>
+            </View>
+            <View style={s.liveBarTrack}>
+              <Animated.View
+                style={[
+                  s.liveBarFill,
+                  {
+                    transform: [{
+                      scaleX: liveDotAnim.interpolate({
+                        inputRange: [0.3, 1],
+                        outputRange: [0.3, 1],
+                      }),
+                    }],
+                  },
+                ]}
+              />
+            </View>
+            <Text style={s.liveRideSafe}>🙏 Ride Safe — Your income is protected this shift</Text>
+          </View>
+        ) : null}
+
+        {activeTab === "wallet" ? <WalletCard totalPaid={totalPaid} transactions={recentTransactions} /> : null}
+
+        {activeTab === "warnings" ? <WarningsCard zones={RED_ZONES} riderLocation={riderLocation} /> : null}
+
+        {activeTab === "claims" ? (
+          <View style={[s.card, { gap: 0 }]}>
+            {/* Header row with title + file-claim CTA */}
+            <View style={s.claimsHeader}>
+              <Text style={s.cardTitle}>My Claims</Text>
+              <TouchableOpacity
+                style={s.fileClaimBtn}
+                onPress={() => setClaimModalVisible(true)}
+              >
+                <Text style={s.fileClaimBtnText}>+ File a Claim</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Status legend */}
+            <View style={s.statusLegend}>
+              {[
+                { color: "#ffa726", label: "Pending" },
+                { color: "#00d26a", label: "Paid" },
+                { color: "#e57373", label: "Denied" },
+                { color: "#64b5f6", label: "Approved" },
+              ].map((l) => (
+                <View key={l.label} style={s.legendItem}>
+                  <View style={[s.legendDot, { backgroundColor: l.color }]} />
+                  <Text style={s.legendLabel}>{l.label}</Text>
+                </View>
+              ))}
+            </View>
+
+            <FlatList
+              data={claims}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => {
+                const statusColor =
+                  item.status === "paid" ? "#00d26a"
+                  : item.status === "approved" ? "#64b5f6"
+                  : item.status === "denied" ? "#e57373"
+                  : "#ffa726";
+                return (
+                  <View style={s.claimRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.claimType}>{item.disruption_type?.replace(/_/g, " ") || "Disruption"}</Text>
+                      <Text style={s.claimMeta}>
+                        {new Date(item.created_at).toLocaleDateString("en-IN")}
+                      </Text>
+                    </View>
+                    <View style={{ alignItems: "flex-end", gap: 4 }}>
+                      <Text style={[s.claimAmount, { color: statusColor }]}>
+                        ₹{Number(item.total_payout || 0).toFixed(0)}
+                      </Text>
+                      <View style={[s.statusBadge, { backgroundColor: statusColor + "22" }]}>
+                        <Text style={[s.statusBadgeText, { color: statusColor }]}>
+                          {item.status?.toUpperCase()}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                );
+              }}
+              ListEmptyComponent={
+                <View style={s.emptyState}>
+                  <Text style={s.emptyIcon}>📋</Text>
+                  <Text style={s.emptyTitle}>No claims yet</Text>
+                  <Text style={s.emptySubtitle}>
+                    Tap "File a Claim" above if a disruption prevented you from working.
+                  </Text>
+                </View>
+              }
+              scrollEnabled={false}
+            />
+          </View>
+        ) : null}
+
+        {/* Claim Submission Modal */}
+        <SubmitClaimModal
+          visible={claimModalVisible}
+          onClose={() => setClaimModalVisible(false)}
+          onSubmitted={(claimId) => {
+            Alert.alert(
+              "Claim Submitted! 🎉",
+              "Your claim is under review. If verified, you'll receive a UPI payout automatically.",
+              [{ text: "Got it", onPress: () => loadClaims() }]
+            );
+          }}
+          riderId={dbRiderId}
+          backendUrl={BACKEND_URL}
+          riderLocation={{ ...riderLocation, zone: profile.zone }}
+        />
       </View>
     </SafeAreaView>
   );
 }
 
-// ─── STYLES ──────────────────────────────────────────────────
 const s = StyleSheet.create({
-  safe:   { flex: 1, backgroundColor: "#0a0a0a", paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 35 : 0 },
-  scroll: { padding: 20, paddingBottom: 48 },
+  safe: { flex: 1, backgroundColor: "#050505" },
+  safeCenter: { flex: 1, backgroundColor: "#050505", justifyContent: "center", alignItems: "center" },
+  loading: { color: "#fff" },
+  authWrap: { flex: 1, justifyContent: "center", paddingHorizontal: 18 },
+  logo: { color: "#00d26a", fontSize: 28, fontWeight: "800", textAlign: "center" },
+  subtitle: { color: "#8f8f8f", textAlign: "center", marginTop: 6, marginBottom: 16 },
 
-  header: { alignItems: "center", marginBottom: 24, paddingTop: 10 },
-  logo:   { fontSize: 30, fontWeight: "900", color: "#00e676", letterSpacing: 3 },
-  sub:    { color: "#444", fontSize: 12, marginTop: 4, letterSpacing: 1 },
-
-  pill: {
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "center",
-    borderWidth: 1,
-    borderRadius: 30,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginBottom: 20,
-    gap: 8,
-  },
-  dot:       { width: 8, height: 8, borderRadius: 4 },
-  pillText:  { fontSize: 13, fontWeight: "700" },
-  pillCount: { fontSize: 12, color: "#555", marginLeft: 4 },
-
-  card: {
-    backgroundColor: "#111",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: "#1e1e1e",
-  },
-  cardTitle: {
-    color: "#555",
-    fontSize: 10,
-    fontWeight: "800",
-    letterSpacing: 1.5,
-    marginBottom: 12,
-  },
-
-  modeRow: { flexDirection: "row", gap: 10 },
-  modeBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#2a2a2a",
-    alignItems: "center",
-    backgroundColor: "#161616",
-  },
-  modeBtnActive:    { backgroundColor: "#001a0d", borderColor: "#00e676" },
-  modeBtnTxt:       { color: "#555", fontSize: 13, fontWeight: "600" },
-  modeBtnTxtActive: { color: "#00e676" },
-
-  zoneRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: "#161616",
-    gap: 10,
-  },
-  zoneRowActive: { /* highlighted by child styles */ },
-  zoneRadio: {
-    width: 16, height: 16, borderRadius: 8,
-    borderWidth: 2, borderColor: "#333",
-  },
-  zoneRadioActive: { borderColor: "#00e676", backgroundColor: "#00e676" },
-  zoneName:       { flex: 1, color: "#666", fontSize: 14 },
-  zoneNameActive: { color: "#fff", fontWeight: "700" },
-  zoneCoords:     { color: "#333", fontSize: 10, fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace" },
-
-  pingTime:   { color: "#fff", fontSize: 18, fontWeight: "700" },
-  pingCoords: {
-    color: "#555", fontSize: 11, marginTop: 4,
-    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
-  },
-  pingZone:   { color: "#00e676", fontSize: 12, marginTop: 6 },
-
-  ctaBtn: {
-    backgroundColor: "#00e676",
-    borderRadius: 18,
-    paddingVertical: 18,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    marginTop: 8,
-    marginBottom: 16,
-  },
-  ctaBtnStop: { backgroundColor: "#1a1a1a", borderWidth: 1, borderColor: "#f44336" },
-  ctaIcon:    { fontSize: 18 },
-  ctaTxt:     { fontSize: 18, fontWeight: "900", color: "#000", letterSpacing: 1 },
-
-  info:  { color: "#555", fontSize: 12, textAlign: "center", marginBottom: 12, lineHeight: 18 },
-  legal: { color: "#2a2a2a", fontSize: 10, textAlign: "center", paddingHorizontal: 20, lineHeight: 16 },
-  input: {
-    backgroundColor: "#1a1a1a",
-    color: "#fff",
-    borderWidth: 1,
-    borderColor: "#333",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-  },
-  checkboxRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    marginTop: 14,
-    marginBottom: 4,
-  },
-  checkbox: {
-    width: 18,
-    height: 18,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: "#555",
-    backgroundColor: "#161616",
-  },
-  checkboxActive: {
-    borderColor: "#00e676",
-    backgroundColor: "#00e676",
-  },
-  checkboxText: {
-    flex: 1,
-    color: "#888",
-    fontSize: 12,
-    lineHeight: 18,
-  },
-
-  // Tab Bar Styles
-  tabBar: {
-    flexDirection: "row",
-    backgroundColor: "#111",
-    borderTopWidth: 1,
-    borderTopColor: "#1e1e1e",
-    paddingBottom: Platform.OS === "ios" ? 20 : 10,
-    paddingTop: 10,
-  },
-  tabItem: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 8,
-  },
-  tabItemActive: {},
-  tabIcon: { fontSize: 20, marginBottom: 4 },
-  tabLabel: { fontSize: 11, color: "#555", fontWeight: "600" },
-  tabLabelActive: { color: "#00e676" },
-
-  // Claims Screen Styles
-  statsRow: { flexDirection: "row", paddingHorizontal: 12, paddingVertical: 12, gap: 8 },
-  statCard: {
-    flex: 1,
-    backgroundColor: "#111",
-    borderRadius: 12,
-    padding: 12,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#1e1e1e",
-  },
-  statValue: { color: "#00e676", fontSize: 18, fontWeight: "900" },
-  statLabel: { color: "#555", fontSize: 9, marginTop: 4, textTransform: "uppercase" },
-  listContent: { padding: 12, paddingBottom: 20 },
-  claimCard: {
-    backgroundColor: "#111",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#1e1e1e",
-  },
-  claimHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
-  claimDate: { color: "#555", fontSize: 12, fontWeight: "600" },
-  statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
-  statusText: { fontSize: 9, fontWeight: "800" },
-  claimBody: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
-  claimZone: { color: "#fff", fontSize: 14, fontWeight: "600" },
-  claimAmount: { color: "#00e676", fontSize: 20, fontWeight: "900" },
-  claimFooter: { flexDirection: "row", gap: 16 },
-  claimType: { color: "#666", fontSize: 11 },
-  claimHours: { color: "#666", fontSize: 11 },
-  appealBtn: {
-    backgroundColor: "#FF6B6B",
-    borderRadius: 10,
-    paddingVertical: 10,
-    marginTop: 12,
-    alignItems: "center",
-  },
-  appealBtnText: { color: "#fff", fontWeight: "700", fontSize: 12 },
-  emptyState: { alignItems: "center", paddingTop: 50, paddingHorizontal: 40 },
-  emptyEmoji: { fontSize: 45, marginBottom: 14 },
-  emptyTitle: { color: "#fff", fontSize: 16, fontWeight: "700", marginBottom: 6 },
-  emptyText: { color: "#555", fontSize: 13, textAlign: "center", lineHeight: 18 },
-
-  // Modal Styles
-  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.85)", justifyContent: "flex-end" },
-  modalContent: {
-    backgroundColor: "#111",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 20,
-    maxHeight: "75%",
-  },
-  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
-  modalTitle: { color: "#fff", fontSize: 16, fontWeight: "800" },
-  modalClose: { color: "#555", fontSize: 18, padding: 5 },
-  modalBody: { gap: 10 },
-  detailRow: {
+  header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 8,
+    paddingHorizontal: 16,
+    paddingTop : window.statusBarHeight + 15 || 50,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#202020",
+  },
+  headerTitle: { color: "#fff", fontWeight: "800", fontSize: 20 },
+  headerSub: { color: "#8f8f8f", marginTop: 2 },
+  logoutBtn: { marginTop: 14, alignSelf: "center" },
+  logoutText: { color: "#ff7e7e", fontWeight: "600" },
+
+  tabs: { flexDirection: "row", paddingHorizontal: 12, paddingTop: 10, gap: 8 },
+  tabBtn: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 999, backgroundColor: "#1a1a1a" },
+  tabBtnActive: { backgroundColor: "#103325" },
+  tabText: { color: "#9a9a9a", fontWeight: "600" },
+  tabTextActive: { color: "#93f2c1" },
+
+  body: { flex: 1, padding: 12 },
+  card: { backgroundColor: "#121212", borderColor: "#252525", borderWidth: 1, borderRadius: 14, padding: 16, flex: 1 },
+  cardTitle: { color: "#fff", fontWeight: "700", fontSize: 17, marginBottom: 8 },
+  meta: { color: "#9a9a9a", marginBottom: 4 },
+
+  cta: { marginTop: 12, backgroundColor: "#00d26a", borderRadius: 10, paddingVertical: 12, alignItems: "center" },
+  ctaStop: { backgroundColor: "#ff7c7c" },
+  ctaText: { color: "#071d12", fontWeight: "800" },
+
+  // Live AI Analysis Banner
+  liveCard: {
+    marginTop: 10,
+    backgroundColor: "#0a150f",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#1a3325",
+    padding: 14,
+    gap: 10,
+  },
+  liveCardRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  liveDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#00d26a",
+  },
+  liveMsg: {
+    color: "#a0e8c0",
+    fontSize: 13,
+    fontWeight: "600",
+    flex: 1,
+  },
+  liveBarTrack: {
+    height: 3,
+    backgroundColor: "#1a2e20",
+    borderRadius: 2,
+    overflow: "hidden",
+  },
+  liveBarFill: {
+    height: 3,
+    width: "100%",
+    backgroundColor: "#00d26a",
+    borderRadius: 2,
+    transformOrigin: "left",
+  },
+  liveRideSafe: {
+    color: "#3a6e4e",
+    fontSize: 11,
+    fontWeight: "600",
+    textAlign: "center",
+    letterSpacing: 0.2,
+  },
+
+  claimsHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  fileClaimBtn: {
+    backgroundColor: "#00d26a",
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+  },
+  fileClaimBtnText: { color: "#071d12", fontWeight: "800", fontSize: 13 },
+
+  statusLegend: { flexDirection: "row", gap: 12, marginBottom: 14, flexWrap: "wrap" },
+  legendItem: { flexDirection: "row", alignItems: "center", gap: 5 },
+  legendDot: { width: 8, height: 8, borderRadius: 4 },
+  legendLabel: { color: "#666", fontSize: 11 },
+
+  claimRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#1e1e1e",
   },
-  detailLabel: { color: "#666", fontSize: 12 },
-  detailValue: { color: "#fff", fontSize: 13, fontWeight: "600" },
-  closeBtn: {
-    backgroundColor: "#1e1e1e",
-    borderRadius: 12,
-    paddingVertical: 14,
-    marginTop: 16,
-    alignItems: "center",
-  },
-  closeBtnText: { color: "#fff", fontWeight: "700" },
+  claimType: { color: "#fff", fontWeight: "600", textTransform: "capitalize" },
+  claimMeta: { color: "#8f8f8f", fontSize: 12, marginTop: 3 },
+  claimAmount: { fontWeight: "800", fontSize: 16 },
+  statusBadge: { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
+  statusBadgeText: { fontSize: 10, fontWeight: "800" },
 
-  // New Claim Styles
-  newClaimBtn: {
-    flexDirection: "row",
+  emptyState: { alignItems: "center", paddingVertical: 40, gap: 8 },
+  emptyIcon: { fontSize: 40 },
+  emptyTitle: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  emptySubtitle: { color: "#666", fontSize: 13, textAlign: "center", lineHeight: 20, maxWidth: 260 },
+
+  // ── End-of-Shift Overlay ──────────────────────────────────
+  overlay: {
+    position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: "rgba(5,5,5,0.97)",
+    zIndex: 999,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#001a0d",
-    borderWidth: 1,
-    borderColor: "#00e676",
-    borderRadius: 12,
-    paddingVertical: 14,
-    marginHorizontal: 12,
-    marginBottom: 12,
-    gap: 8,
+    padding: 24,
   },
-  newClaimBtnIcon: { fontSize: 18 },
-  newClaimBtnText: { color: "#00e676", fontWeight: "700", fontSize: 14 },
-  
-  typeRow: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
-  typeBtn: {
-    flex: 1,
-    minWidth: "22%",
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#2a2a2a",
+
+  // Scanning phase
+  analysisBox: { alignItems: "center", width: "100%", maxWidth: 340 },
+  scanRing: {
+    width: 100, height: 100,
+    borderRadius: 50,
+    borderWidth: 2,
+    borderColor: "#00d26a44",
     alignItems: "center",
-    backgroundColor: "#161616",
+    justifyContent: "center",
+    marginBottom: 24,
+    backgroundColor: "#0a1f12",
   },
-  typeBtnActive: { backgroundColor: "#001a0d", borderColor: "#00e676" },
-  typeIcon: { fontSize: 24, marginBottom: 4 },
-  typeLabel: { color: "#555", fontSize: 11, fontWeight: "600" },
-  typeLabelActive: { color: "#00e676" },
-  
-  evidenceBtn: {
+  scanPulse: {
+    position: "absolute",
+    width: 100, height: 100,
+    borderRadius: 50,
+    borderWidth: 1,
+    borderColor: "#00d26a",
+    opacity: 0.35,
+  },
+  scanIcon: { fontSize: 40 },
+  analysisTitle: {
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "800",
+    textAlign: "center",
+    letterSpacing: 0.3,
+    marginBottom: 6,
+  },
+  analysisSubtitle: {
+    color: "#666",
+    fontSize: 13,
+    textAlign: "center",
+    marginBottom: 28,
+  },
+  stepList: { width: "100%", gap: 10 },
+  stepRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  stepDot: {
+    width: 22, height: 22,
+    borderRadius: 11,
     backgroundColor: "#1a1a1a",
+    color: "#444",
+    textAlign: "center",
+    lineHeight: 22,
+    fontWeight: "800",
+    fontSize: 13,
+  },
+  stepDotActive: { backgroundColor: "#0e2a1a", color: "#00d26a" },
+  stepDotCurrent: { backgroundColor: "#00d26a22", color: "#00d26a", borderWidth: 1, borderColor: "#00d26a" },
+  stepText: { color: "#444", fontSize: 14, flex: 1 },
+  stepTextActive: { color: "#ccc" },
+
+  // Summary (done) phase
+  summaryBox: {
+    alignItems: "center",
+    width: "100%",
+    maxWidth: 340,
+    backgroundColor: "#0e0e0e",
+    borderRadius: 24,
     borderWidth: 1,
-    borderColor: "#333",
-    borderStyle: "dashed",
+    borderColor: "#1e1e1e",
+    padding: 28,
+    gap: 0,
+  },
+  summaryEmoji: { fontSize: 52, marginBottom: 12 },
+  summaryTitle: {
+    color: "#fff",
+    fontSize: 30,
+    fontWeight: "900",
+    letterSpacing: 1,
+    marginBottom: 10,
+  },
+  summaryMsg: {
+    color: "#777",
+    fontSize: 13,
+    textAlign: "center",
+    lineHeight: 20,
+    marginBottom: 22,
+  },
+  summaryStats: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 20,
+  },
+  statChip: {
+    flex: 1,
+    backgroundColor: "#151515",
     borderRadius: 12,
-    padding: 20,
-  },
-  evidencePreview: {
-    flexDirection: "row",
+    borderWidth: 1,
+    borderColor: "#252525",
+    paddingVertical: 12,
     alignItems: "center",
-    justifyContent: "center",
   },
-  evidenceEmpty: {
-    flexDirection: "row",
+  statNum: { color: "#fff", fontWeight: "800", fontSize: 16, marginBottom: 2 },
+  statLabel: { color: "#555", fontSize: 10, fontWeight: "600", letterSpacing: 0.3 },
+  safetyTip: {
+    backgroundColor: "#0a1a10",
+    borderLeftWidth: 3,
+    borderLeftColor: "#00d26a",
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 22,
+    width: "100%",
+  },
+  safetyTipText: { color: "#7ecda0", fontSize: 12, lineHeight: 18 },
+  summaryClose: {
+    backgroundColor: "#00d26a",
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    width: "100%",
     alignItems: "center",
-    justifyContent: "center",
   },
-  evidenceIcon: { fontSize: 24, marginRight: 10 },
-  evidenceText: { color: "#888", fontSize: 14 },
+  summaryCloseText: { color: "#071d12", fontWeight: "900", fontSize: 16, letterSpacing: 0.5 },
 });

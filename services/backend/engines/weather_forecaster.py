@@ -22,6 +22,7 @@ import httpx
 import h3
 
 from config import get_settings
+from engines.h3_utils import latlng_to_cell
 
 settings = get_settings()
 
@@ -264,7 +265,7 @@ async def get_zone_weather(zone: str) -> WeatherForecast:
     """
     zone_info = CHENNAI_ZONES.get(zone, CHENNAI_ZONES["central_chennai"])
     lat, lng = zone_info["lat"], zone_info["lng"]
-    h3_hex = h3.latlng_to_cell(lat, lng, settings.h3_resolution)
+    h3_hex = latlng_to_cell(lat, lng, settings.h3_resolution)
     
     # Fetch current weather
     current = await get_current_weather(lat, lng)

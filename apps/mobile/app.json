@@ -23,7 +23,12 @@
         "ACCESS_COARSE_LOCATION",
         "ACCESS_BACKGROUND_LOCATION",
         "FOREGROUND_SERVICE",
-        "FOREGROUND_SERVICE_LOCATION"
+        "FOREGROUND_SERVICE_LOCATION",
+        "CAMERA",
+        "READ_MEDIA_IMAGES",
+        "READ_MEDIA_VIDEO",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
       ]
     },
     "ios": {
@@ -31,6 +36,8 @@
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "GigaChad needs your location to validate disruption claims and protect your income.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "GigaChad tracks your location during active shifts to automatically process income protection claims.",
+        "NSCameraUsageDescription": "GigaChad uses your camera to capture evidence photos/videos for claim submissions.",
+        "NSPhotoLibraryUsageDescription": "GigaChad accesses your photos to let you attach evidence to disruption claims.",
         "UIBackgroundModes": ["location", "fetch"]
       }
     },
@@ -42,6 +49,13 @@
           "locationAlwaysPermission": "GigaChad tracks location during shifts to auto-process claims.",
           "isAndroidBackgroundLocationEnabled": true,
           "isAndroidForegroundServiceEnabled": true
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "GigaChad needs photo access to attach evidence to your disruption claims.",
+          "cameraPermission": "GigaChad uses the camera to capture live evidence for claim submissions."
         }
       ]
     ]

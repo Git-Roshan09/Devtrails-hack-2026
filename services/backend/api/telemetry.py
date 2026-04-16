@@ -5,10 +5,10 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 import uuid
-import h3
 
 from database import get_db
 from models import TelemetryLog, Rider
+from engines.h3_utils import latlng_to_cell
 
 router = APIRouter()
 
@@ -57,7 +57,7 @@ async def ingest_telemetry(data: TelemetryPing, db: AsyncSession = Depends(get_d
         raise HTTPException(404, "Rider not found")
 
     # Compute H3 hex for this coordinate
-    h3_hex = h3.latlng_to_cell(data.lat, data.lng, H3_RESOLUTION)
+    h3_hex = latlng_to_cell(data.lat, data.lng, H3_RESOLUTION)
 
     log = TelemetryLog(
         rider_id=data.rider_id,

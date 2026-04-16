@@ -10,8 +10,8 @@ Uses Groq Llama-3 to classify Tamil news / X posts for strike/VVIP events.
 """
 
 import httpx
-import h3
 from config import get_settings
+from engines.h3_utils import cell_to_latlng
 
 settings = get_settings()
 
@@ -32,7 +32,7 @@ STRIKE_KEYWORDS = [
 def _hex_centroid(h3_hex: str) -> tuple[float, float]:
     """Return (lat, lng) centroid of an H3 cell."""
     if h3_hex not in _HEX_TO_LATLNG:
-        lat, lng = h3.cell_to_latlng(h3_hex)
+        lat, lng = cell_to_latlng(h3_hex)
         _HEX_TO_LATLNG[h3_hex] = (lat, lng)
     return _HEX_TO_LATLNG[h3_hex]
 
