@@ -8,6 +8,7 @@ import uuid
 
 from database import get_db
 from models import Claim, ClaimStatus, Rider
+from engines.storage import upload_evidence_to_s3
 
 router = APIRouter()
 
@@ -87,7 +88,7 @@ async def submit_claim(
 
     evidence_ref = None
     if evidence:
-        evidence_ref = evidence.filename
+        evidence_ref = await upload_evidence_to_s3(evidence, "claims/evidence")
 
     claim = Claim(
         rider_id=rider_id,
@@ -127,6 +128,8 @@ async def submit_appeal(
         raise HTTPException(400, f"Claim is {claim.status.value}, not soft_flagged")
 
     claim.appeal_video_url = video_url or (video.filename if video else None)
+    if video:
+        claim.appeal_video_url = await upload_evidence_to_s3(video, "claims/appeals")
     # In production: queue for human review. For demo: auto-approve.
     claim.status = ClaimStatus.approved
     await db.commit()

@@ -42,6 +42,7 @@ apscheduler
 # ── Payments & Notifications ────────────────────────
 razorpay
 twilio
+boto3
 
 # ── Data Processing ─────────────────────────────────
 pandas

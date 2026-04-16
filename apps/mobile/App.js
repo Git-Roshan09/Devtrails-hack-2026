@@ -42,6 +42,7 @@ const BG_TASK_NAME = "GIGACHAD_GPS_TASK";
 const PING_INTERVAL_SECONDS = 10;
 const RIDER_ID_STORAGE_KEY = "gc_rider_id";
 const KYC_STORAGE_PREFIX = "gc_kyc_";
+const MOCK_LOCATION_BLOCK_KEY = "gc_mock_location_block";
 
 
 TaskManager.defineTask(BG_TASK_NAME, async ({ data, error }) => {
@@ -53,6 +54,10 @@ TaskManager.defineTask(BG_TASK_NAME, async ({ data, error }) => {
     const { locations } = data;
     const loc = locations[0];
     if (loc) {
+      if (Platform.OS === "android" && loc.mocked) {
+        await AsyncStorage.setItem(MOCK_LOCATION_BLOCK_KEY, "true");
+        return;
+      }
       const riderId = await AsyncStorage.getItem(RIDER_ID_STORAGE_KEY);
       if (!riderId) return;
       await sendPing(loc.coords.latitude, loc.coords.longitude, false, riderId);
@@ -109,6 +114,7 @@ export default function App() {
   const [lastPing, setLastPing] = useState(null);
   const [pingCount, setPingCount] = useState(0);
   const [status, setStatus] = useState("idle");
+  const [mockLocationDetected, setMockLocationDetected] = useState(false);
   const [kycLoading, setKycLoading] = useState(true);
   const [kycVerified, setKycVerified] = useState(false);
   const [kycName, setKycName] = useState("");
@@ -253,6 +259,7 @@ export default function App() {
   const handleLogout = async () => {
     await stopTracking();
     await AsyncStorage.removeItem(RIDER_ID_STORAGE_KEY);
+    await AsyncStorage.removeItem(MOCK_LOCATION_BLOCK_KEY);
     await signOut(auth);
   };
 
@@ -494,6 +501,15 @@ export default function App() {
     }
 
     const current = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+    if (Platform.OS === "android" && current.mocked) {
+      setMockLocationDetected(true);
+      setStatus("error");
+      Alert.alert(
+        "Mock Location Detected",
+        "Turn off mock location in Android developer settings to continue using GigaChad."
+      );
+      return;
+    }
     const nowOk = await sendPing(current.coords.latitude, current.coords.longitude, false, dbRiderId);
     if (nowOk) {
       setCurrentCoords({ lat: current.coords.latitude.toFixed(5), lng: current.coords.longitude.toFixed(5) });
@@ -523,6 +539,7 @@ export default function App() {
     });
 
     setIsTracking(true);
+    setMockLocationDetected(false);
     setStatus("tracking");
   }
 
@@ -539,8 +556,20 @@ export default function App() {
 
   
 
+  useEffect(() => {
+    (async () => {
+      const flagged = await AsyncStorage.getItem(MOCK_LOCATION_BLOCK_KEY);
+      if (flagged === "true") {
+        setMockLocationDetected(true);
+        setStatus("error");
+      }
+    })();
+  }, []);
+
   const statusColor = { idle: "#555", tracking: "#00e676", error: "#f44336" }[status];
-  const statusLabel = { idle: "● Idle", tracking: "● Broadcasting", error: "● Error" }[status];
+  const statusLabel = mockLocationDetected
+    ? "● Mock GPS Detected"
+    : { idle: "● Idle", tracking: "● Broadcasting", error: "● Error" }[status];
 
   // ── Render Loading or Login screen if not auth'd ─────────
   if (authLoading) return <View style={[s.safe, {justifyContent: 'center', alignItems: 'center'}]}><Text style={{color:'#fff', textAlign:'center'}}>Loading...</Text></View>;
@@ -680,6 +709,11 @@ export default function App() {
         <Text style={s.info}>
           {`Broadcasting real GPS to backend every ${PING_INTERVAL_SECONDS}s (works in background)`}
         </Text>
+        {mockLocationDetected && (
+          <Text style={[s.info, { color: "#f44336", marginTop: -4 }]}>
+            Turn off Android mock location (Developer Options) and restart shift tracking.
+          </Text>
+        )}
 
         <Text style={s.legal}>
           GigaChad monitors your location only during active shifts to validate income protection claims.

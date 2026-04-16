@@ -48,6 +48,12 @@ class Settings(BaseSettings):
     # ── Firebase Admin ──────────────────────────────────────────
     firebase_service_account_path: str = ""
 
+    # ── S3 / Object Storage ─────────────────────────────────────
+    aws_access_key_id: str = ""
+    aws_secret_access_key: str = ""
+    aws_region: str = "ap-south-1"
+    s3_bucket_name: str = ""
+
     # ── Celery / Background Tasks ────────────────────────────
     celery_broker_url: str = "redis://localhost:6379/0"
     celery_result_backend: str = "redis://localhost:6379/0"

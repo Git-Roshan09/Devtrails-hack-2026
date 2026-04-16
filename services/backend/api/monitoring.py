@@ -291,12 +291,13 @@ async def get_disruption_news_feed(
     
     try:
         news = await get_disruption_news(hours=hours)
+        articles = news if isinstance(news, list) else news.get("articles", [])
         
         items = []
         disruption_detected = False
         
-        for article in news.get("articles", []):
-            item_zone = article.get("zone")
+        for article in articles:
+            item_zone = article.get("zone") or article.get("zone_name")
             
             # Filter by zone if specified
             if zone and item_zone and item_zone.lower() != zone.lower():
@@ -311,9 +312,9 @@ async def get_disruption_news_feed(
                 source=article.get("source", "unknown"),
                 url=article.get("url"),
                 zone=item_zone,
-                disruption_type=article.get("disruption_type"),
+                disruption_type=article.get("disruption_type") or article.get("event_type"),
                 confidence=confidence,
-                published=article.get("published"),
+                published=article.get("published") or article.get("detected_at"),
             ))
         
         return NewsResponse(
