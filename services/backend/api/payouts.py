@@ -42,6 +42,8 @@ class PayoutResponse(BaseModel):
     status: str
     amount: float
     fraud_score: float
+    severity_multiplier: Optional[float]
+    composite_score: Optional[float]
     fraud_flags: list[str]
     razorpay_payout_id: Optional[str]
     created_at: datetime
@@ -133,6 +135,8 @@ async def list_payouts(
             status=claim.status.value,
             amount=float(claim.total_payout or 0),
             fraud_score=float(claim.fraud_score or 0),
+            severity_multiplier=float(claim.severity_multiplier or 1.0),
+            composite_score=float(disruption.composite_score or 0),
             fraud_flags=claim.fraud_flags or [],
             razorpay_payout_id=claim.razorpay_payout_id,
             created_at=claim.created_at,
@@ -230,6 +234,8 @@ async def get_payout_details(
         status=claim.status.value,
         amount=float(claim.total_payout or 0),
         fraud_score=float(claim.fraud_score or 0),
+        severity_multiplier=float(claim.severity_multiplier or 1.0),
+        composite_score=float(disruption.composite_score or 0),
         fraud_flags=claim.fraud_flags or [],
         razorpay_payout_id=claim.razorpay_payout_id,
         created_at=claim.created_at,
