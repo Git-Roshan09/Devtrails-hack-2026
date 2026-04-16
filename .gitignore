@@ -4,7 +4,12 @@ __pycache__/
 *.pyo
 .venv/
 venv/
+
+# Env files
 .env
+.env.*
+!.env.example
+!.env.*.example
 
 # Node
 node_modules/
@@ -18,6 +23,17 @@ build/
 
 # Docker
 *.log
+
+# Secrets and local credential artifacts
+*.pem
+*.key
+*.p12
+*.pfx
+services/backend/.env.remote.backup
+services/backend/credentials/*.json
+apps/whatsapp-bot/.env
+dashboard/.env.local
+apps/mobile/.env
 
 # OS
 .DS_Store
