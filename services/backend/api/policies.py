@@ -12,6 +12,19 @@ from engines.actuarial import compute_weekly_premium
 
 router = APIRouter()
 
+
+def _to_premium_quote_fields(quote_data: dict) -> dict:
+    """Keep only DB columns accepted by PremiumQuote."""
+    allowed = {
+        "zone",
+        "ai_risk_score",
+        "basic_premium",
+        "plus_premium",
+        "pro_premium",
+        "forecast_json",
+    }
+    return {k: v for k, v in quote_data.items() if k in allowed}
+
 TIER_CAPS = {
     PolicyTier.giga_basic: 300.0,
     PolicyTier.giga_plus: 600.0,
@@ -59,7 +72,7 @@ async def get_current_quote(db: AsyncSession = Depends(get_db)):
         quote_data = await compute_weekly_premium(week_start)
         quote = PremiumQuote(
             week_start=week_start,
-            **quote_data,
+            **_to_premium_quote_fields(quote_data),
         )
         db.add(quote)
         await db.flush()
@@ -104,7 +117,10 @@ async def opt_in(data: PolicyOptIn, db: AsyncSession = Depends(get_db)):
     quote = quote_result.scalar_one_or_none()
     if not quote:
         quote_data = await compute_weekly_premium(week_start)
-        quote = PremiumQuote(week_start=week_start, **quote_data)
+        quote = PremiumQuote(
+            week_start=week_start,
+            **_to_premium_quote_fields(quote_data),
+        )
         db.add(quote)
         await db.flush()
 

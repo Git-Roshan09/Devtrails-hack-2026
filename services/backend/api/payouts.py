@@ -288,7 +288,7 @@ async def execute_payout(
         payout_id = await _execute_razorpay_payout(
             rider=rider,
             amount=float(claim.total_payout),
-            claim_id=str(claim.id),
+            reference=str(claim.id),
         )
         
         if payout_id:
@@ -367,7 +367,7 @@ async def batch_execute_payouts(
             payout_id = await _execute_razorpay_payout(
                 rider=rider,
                 amount=float(claim.total_payout),
-                claim_id=str(claim.id),
+                reference=str(claim.id),
             )
             
             if payout_id:
