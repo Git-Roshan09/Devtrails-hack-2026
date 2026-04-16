@@ -3,7 +3,7 @@ import enum
 from datetime import datetime, date
 from typing import Optional, List
 from sqlalchemy import (
-    Column, String, Boolean, Numeric, ARRAY, Text,
+    Column, String, Boolean, Integer, Numeric, ARRAY, Text,
     ForeignKey, DateTime, Date, Enum as SAEnum, func
 )
 from sqlalchemy.dialects.postgresql import UUID, JSONB
@@ -52,6 +52,13 @@ class ClaimStatus(str, enum.Enum):
     soft_flagged = "soft_flagged"
     denied = "denied"
     paid = "paid"
+
+
+class DisruptionSeverity(str, enum.Enum):
+    minor = "minor"
+    moderate = "moderate"
+    severe = "severe"
+    catastrophic = "catastrophic"
 
 
 # ─── ORM MODELS ─────────────────────────────────────────────
@@ -138,6 +145,8 @@ class DisruptionEvent(Base):
     confidence = Column(Numeric(5, 4))
     trigger_source = Column(String(50))
     status = Column(SAEnum(DisruptionStatus, name="disruption_status", create_type=False), default=DisruptionStatus.active)
+    severity = Column(SAEnum(DisruptionSeverity, name="disruption_severity", create_type=False), default=DisruptionSeverity.moderate)
+    composite_score = Column(Numeric(5, 2))  # 0-100 composite severity index
     started_at = Column(DateTime(timezone=True), server_default=func.now())
     resolved_at = Column(DateTime(timezone=True))
 
@@ -156,9 +165,12 @@ class Claim(Base):
     bonus_loss = Column(Numeric(8, 2), default=0)
     total_payout = Column(Numeric(8, 2))
     fraud_score = Column(Numeric(5, 4))
+    severity_multiplier = Column(Numeric(4, 2), default=1.0)
+    rider_feedback_score = Column(Numeric(2, 1))  # 1=too low, 2=fair, 3=too high
     status = Column(SAEnum(ClaimStatus, name="claim_status", create_type=False), default=ClaimStatus.pending)
     fraud_flags = Column(ARRAY(Text))
     appeal_video_url = Column(Text)
+    audio_proof_url = Column(Text)
     razorpay_payout_id = Column(String(100))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     processed_at = Column(DateTime(timezone=True))
@@ -180,3 +192,29 @@ class PremiumQuote(Base):
     pro_premium = Column(Numeric(8, 2))
     forecast_json = Column(JSONB)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class HexRiskProfile(Base):
+    """Per hex-grid calibration data for location-aware severity thresholds."""
+    __tablename__ = "hex_risk_profiles"
+
+    h3_index = Column(String(20), primary_key=True)
+    zone_name = Column(String(100))
+    flood_threshold_mm = Column(Numeric(6, 2), default=30.0)
+    drainage_efficiency = Column(Numeric(3, 2), default=0.5)  # 0-1
+    historical_cancel_correlation = Column(Numeric(5, 4), default=0.5)
+    seasonal_adjustment = Column(Numeric(4, 2), default=1.0)
+    last_calibrated_at = Column(DateTime(timezone=True))
+
+
+class RiderVelocityCache(Base):
+    """Cached hourly delivery velocity for trajectory-based bonus loss calculation."""
+    __tablename__ = "rider_velocity_cache"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    rider_id = Column(UUID(as_uuid=True), ForeignKey("riders.id", ondelete="CASCADE"))
+    hour_of_day = Column(Integer, nullable=False)  # 0-23
+    day_of_week = Column(Integer, nullable=False)  # 0=Monday, 6=Sunday
+    avg_deliveries_per_hour = Column(Numeric(4, 2), default=0.0)
+    sample_count = Column(Integer, default=0)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now())

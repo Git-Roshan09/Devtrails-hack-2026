@@ -106,6 +106,12 @@ async def score_claim_fraud(
         fraud_score += 0.30
         flags.append("syndicate_cluster_detected")
 
+    # ── Check 5: Behavioral Biometrics ──────────────────────
+    biometric_result = verify_human_presence(telemetry_logs)
+    if not biometric_result["is_human_likely"]:
+        fraud_score += 0.20
+        flags.extend(biometric_result["failed_checks"])
+
     # Cap at 1.0
     fraud_score = min(round(fraud_score, 4), 1.0)
 
@@ -183,3 +189,90 @@ def _haversine(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     dlon = math.radians(lon2 - lon1)
     a = math.sin(dlat / 2) ** 2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2) ** 2
     return R * 2 * math.asin(math.sqrt(a))
+
+
+def verify_human_presence(telemetry_logs: list[dict]) -> dict:
+    """
+    Behavioral biometrics: verify the device is being carried by an active human,
+    not sitting on a table or running a GPS spoofing script.
+
+    Checks:
+    1. Movement entropy: accelerometer variance > 0.7 (real riding has high vibration)
+    2. Orientation changes: significant accel shifts ≥ 3/hour (natural phone handling)
+    3. Network movement: different WiFi SSIDs seen ≥ 2 (physical movement)
+    """
+    failed_checks = []
+    checks_passed = 0
+    total_checks = 3
+
+    if len(telemetry_logs) < 3:
+        return {"is_human_likely": True, "failed_checks": [], "confidence": 0.5}
+
+    # ── Check 1: Movement Entropy (accelerometer variance) ────
+    accel_magnitudes = []
+    for t in telemetry_logs:
+        ax = float(t.get("accel_x", 0) or 0)
+        ay = float(t.get("accel_y", 0) or 0)
+        az = float(t.get("accel_z", 9.8) or 9.8)
+        accel_magnitudes.append(_accel_magnitude(ax, ay, az))
+
+    if len(accel_magnitudes) >= 2:
+        mean_mag = sum(accel_magnitudes) / len(accel_magnitudes)
+        variance = sum((m - mean_mag) ** 2 for m in accel_magnitudes) / len(accel_magnitudes)
+        if variance > 0.7:
+            checks_passed += 1
+        else:
+            failed_checks.append(f"low_movement_entropy_{variance:.2f}")
+    else:
+        checks_passed += 1  # Benefit of doubt with limited data
+
+    # ── Check 2: Orientation Changes ──────────────────────────
+    orientation_shifts = 0
+    for i in range(1, len(telemetry_logs)):
+        prev_ax = float(telemetry_logs[i-1].get("accel_x", 0) or 0)
+        prev_ay = float(telemetry_logs[i-1].get("accel_y", 0) or 0)
+        curr_ax = float(telemetry_logs[i].get("accel_x", 0) or 0)
+        curr_ay = float(telemetry_logs[i].get("accel_y", 0) or 0)
+        # Significant axis change = phone was picked up/moved
+        if abs(curr_ax - prev_ax) > 1.5 or abs(curr_ay - prev_ay) > 1.5:
+            orientation_shifts += 1
+
+    # Scale to per-hour rate
+    if len(telemetry_logs) >= 2:
+        first_ts = telemetry_logs[0].get("ts")
+        last_ts = telemetry_logs[-1].get("ts")
+        if first_ts and last_ts:
+            span_hours = max((last_ts - first_ts).total_seconds() / 3600, 0.1)
+            shifts_per_hour = orientation_shifts / span_hours
+            if shifts_per_hour >= 3:
+                checks_passed += 1
+            else:
+                failed_checks.append(f"low_orientation_changes_{shifts_per_hour:.1f}/hr")
+        else:
+            checks_passed += 1
+    else:
+        checks_passed += 1
+
+    # ── Check 3: Network Movement (different SSIDs) ───────────
+    unique_ssids = set(
+        t.get("wifi_ssid", "") for t in telemetry_logs
+        if t.get("wifi_ssid")
+    )
+    if len(unique_ssids) >= 2:
+        checks_passed += 1
+    elif len(unique_ssids) == 0:
+        checks_passed += 1  # No WiFi = probably on cellular (moving)
+    else:
+        failed_checks.append("single_network_location")
+
+    # Human-likely if at least 2 of 3 checks pass
+    is_human = checks_passed >= 2
+    confidence = checks_passed / total_checks
+
+    return {
+        "is_human_likely": is_human,
+        "failed_checks": failed_checks,
+        "confidence": confidence,
+        "checks_passed": checks_passed,
+        "total_checks": total_checks,
+    }

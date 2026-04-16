@@ -22,6 +22,7 @@ class ClaimOut(BaseModel):
     bonus_loss: Optional[float]
     total_payout: Optional[float]
     fraud_score: Optional[float]
+    severity_multiplier: Optional[float]
     status: ClaimStatus
     fraud_flags: Optional[list[str]]
     created_at: datetime
