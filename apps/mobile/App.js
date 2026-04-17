@@ -19,7 +19,7 @@ import WarningsCard from "./src/components/WarningsCard";
 import SubmitClaimModal from "./src/components/SubmitClaimModal";
 import { RED_ZONES } from "./src/data/zones";
 
-const BACKEND_URL = "https://grumpy-moles-wash.loca.lt";
+const BACKEND_URL = "https://old-peaches-buy.loca.lt";
 const BG_TASK_NAME = "GIGACHAD_GPS_TASK";
 const PING_INTERVAL_SECONDS = 10;
 const RIDER_ID_STORAGE_KEY = "gc_rider_id";

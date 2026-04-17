@@ -52,8 +52,8 @@ async def send_whatsapp_payout(
         f"We detected a *{severity_label}* disruption in *{zone}*.\n\n"
         f"💸 *₹{amount:.0f}* has been credited to your UPI account.\n\n"
         f"_Zero forms. Zero waiting. That's the GigaChad promise._ 💪\n\n"
-        f"📊 *Was this payout fair?*\n"
-        f"Reply *1* = Too low, *2* = Fair, *3* = Too high\n\n"
+        f"📊 *Payout feedback*\n"
+        f"Reply *1* = Too low or *3* = Too high\n\n"
         f"Stay safe bro! 🙏"
     )
     return await _send_message(phone, message)
@@ -100,10 +100,9 @@ async def send_whatsapp_feedback_request(phone: str, name: str, amount: float, c
     message = (
         f"Hey {first_name}! Quick check 📋\n\n"
         f"You received *₹{amount:.0f}* for claim `{claim_id[:8]}`.\n\n"
-        f"*Was this payout fair for your actual losses?*\n"
+        f"*How should we tune this payout?*\n"
         f"Reply:\n"
         f"  *1* = 😤 Too low — I lost more\n"
-        f"  *2* = 👍 Fair — about right\n"
         f"  *3* = 🙏 Generous — more than expected\n\n"
         f"_Your feedback helps us improve for all riders!_ 💪"
     )

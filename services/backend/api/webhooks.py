@@ -14,6 +14,7 @@ Configure in Twilio Console → Messaging → WhatsApp Sandbox → Webhook URL
 from datetime import datetime, date, timedelta
 from typing import Optional
 import re
+import random
 from fastapi import APIRouter, Request, HTTPException, Form, UploadFile, File
 from fastapi.responses import Response
 from sqlalchemy import select, and_
@@ -46,9 +47,10 @@ async def whatsapp_webhook(
     Handle incoming WhatsApp messages from Twilio.
     
     Message types handled:
-    - "1", "2", "3" → Plan selection
+    - "1", "2", "3" → Feedback (if pending) or plan selection
     - "SKIP" → Opt out of weekly plan
     - Video attachment → Soft-flag appeal
+    - Audio attachment → Additional claim proof
     - Text → General inquiry
     """
     # Extract phone number (remove 'whatsapp:' prefix)
@@ -73,9 +75,9 @@ async def whatsapp_webhook(
             ))
             return Response(content="", media_type="text/xml")
         
-        # ── Handle Plan Selection (1/2/3) ──────────────────────
+        # ── Handle Feedback/Plan Selection (1/2/3) ──────────────
         if message in ["1", "2", "3"]:
-            response = await _handle_plan_selection(db, rider, message)
+            response = await _handle_feedback_or_plan(db, rider, message)
         
         # ── Handle Opt-Out ─────────────────────────────────────
         elif message == "SKIP":
@@ -85,8 +87,37 @@ async def whatsapp_webhook(
         elif NumMedia > 0 and MediaContentType0 and "video" in MediaContentType0:
             response = await _handle_video_appeal(db, rider, MediaUrl0)
         
+        # ── Handle Audio Proof Upload ───────────────────────────
+        elif NumMedia > 0 and MediaContentType0 and "audio" in MediaContentType0:
+            response = await _handle_audio_proof(db, rider, MediaUrl0)
+
+        # ── Handle Photo Proof Upload ───────────────────────────
+        elif NumMedia > 0 and MediaContentType0 and "image" in MediaContentType0:
+            response = await _handle_photo_proof(db, rider, MediaUrl0)
+        
+        # ── Handle Greeting ─────────────────────────────────────
+        elif message in ["HI", "HELLO", "HEY"]:
+            response = (
+                f"Hey {rider.name.split()[0]}! 👋\n\n"
+                f"Welcome to GigaChad WhatsApp support.\n"
+                f"Stay safe and ride carefully today! 🛵\n\n"
+                f"Reply *STATUS* anytime for your latest coverage/claims."
+            )
+
+        # ── Handle Disruption Acknowledgement ───────────────────
+        elif message in ["OK", "OKAY", "DONE", "NOTED"]:
+            response = (
+                f"Got it, {rider.name.split()[0]} ✅\n\n"
+                f"You're all set — please be careful in disruption zones.\n"
+                f"_GigaChad is actively monitoring your protection._"
+            )
+
+        # ── Handle Recent Checkout Query ───────────────────────
+        elif message in ["RECENT CHECKOUT", "RECENT CHECKOUTS", "CHECKOUT", "LAST CHECKOUT"]:
+            response = _handle_recent_checkout(rider)
+
         # ── Handle Help/Status Queries ─────────────────────────
-        elif message in ["STATUS", "HELP", "HI", "HELLO"]:
+        elif message in ["STATUS", "HELP"]:
             response = await _handle_status_query(db, rider)
         
         # ── Default Response ───────────────────────────────────
@@ -97,7 +128,7 @@ async def whatsapp_webhook(
                 f"• *STATUS* - Check your coverage & claims\n"
                 f"• *1, 2, or 3* - Select a plan after receiving quote\n"
                 f"• *SKIP* - Opt out this week\n"
-                f"• Send a *video* to appeal a flagged claim\n\n"
+                f"• Send a *photo/video/audio* as claim proof when requested\n\n"
                 f"_Need help? Visit gigachad.in/support_"
             )
         
@@ -156,11 +187,11 @@ async def _handle_plan_selection(db: AsyncSession, rider: Rider, selection: str)
     policy = Policy(
         rider_id=rider.id,
         tier=tier,
-        premium_paid=premium,
+        weekly_premium=premium,
         payout_cap=payout_cap,
         week_start=week_start,
         week_end=week_end,
-        status=PolicyStatus.pending,  # Will activate after payment
+        status=PolicyStatus.pending_payment,  # Will activate after payment
     )
     db.add(policy)
     await db.commit()
@@ -181,6 +212,72 @@ async def _handle_plan_selection(db: AsyncSession, rider: Rider, selection: str)
         f"Amount: ₹{premium}\n\n"
         f"_Or click: {payment_link}_\n\n"
         f"Your policy activates instantly after payment confirmation! ⚡"
+    )
+
+
+async def _handle_feedback_or_plan(db: AsyncSession, rider: Rider, selection: str) -> str:
+    """
+    If there's a recently paid claim pending feedback, store feedback.
+    Otherwise interpret 1/2/3 as weekly plan selection.
+    """
+    result = await db.execute(
+        select(Claim)
+        .where(and_(
+            Claim.rider_id == rider.id,
+            Claim.status == ClaimStatus.paid,
+            Claim.rider_feedback_score.is_(None),
+            Claim.created_at >= datetime.utcnow() - timedelta(days=7),
+        ))
+        .order_by(Claim.created_at.desc())
+        .limit(1)
+    )
+    claim = result.scalar_one_or_none()
+
+    if not claim:
+        return await _handle_plan_selection(db, rider, selection)
+
+    if selection == "2":
+        return (
+            f"Hey {rider.name.split()[0]} 👋\n\n"
+            f"The *fair* option is disabled for this demo.\n"
+            f"Reply *1* (too low) or *3* (too high)."
+        )
+
+    score = int(selection)
+    claim.rider_feedback_score = score
+    await db.commit()
+
+    feedback_text = {
+        1: "Too low — we'll tune payouts upward for similar events.",
+        3: "Higher than expected — we'll tighten overpayment checks.",
+    }[score]
+
+    return (
+        f"🙏 Thanks {rider.name.split()[0]}! Feedback received.\n\n"
+        f"Claim: `{str(claim.id)[:8]}`\n"
+        f"Response: *{score}*\n"
+        f"{feedback_text}\n\n"
+        f"_This helps improve payout accuracy for all riders._"
+    )
+
+
+def _handle_recent_checkout(rider: Rider) -> str:
+    """Return a random recent checkout-style transaction line for demo interaction."""
+    checkouts = [
+        ("Zepto - Velachery", 187),
+        ("Swiggy Instamart - OMR", 243),
+        ("Blinkit - T Nagar", 159),
+        ("BigBasket Now - Adyar", 211),
+        ("Dunzo Daily - Anna Nagar", 134),
+    ]
+    merchant, amount = random.choice(checkouts)
+    ref = random.randint(100000, 999999)
+    return (
+        f"🧾 *Recent Checkout*\n\n"
+        f"Merchant: {merchant}\n"
+        f"Amount: ₹{amount}\n"
+        f"Ref: CHK{ref}\n\n"
+        f"_Demo checkout snapshot generated successfully._"
     )
 
 
@@ -216,6 +313,7 @@ async def _handle_video_appeal(db: AsyncSession, rider: Rider, video_url: str) -
         )
     
     # Store video URL for manual review
+    claim.appeal_video_url = video_url
     if not claim.fraud_flags:
         claim.fraud_flags = []
     claim.fraud_flags.append(f"[VIDEO_APPEAL] {video_url}")
@@ -229,6 +327,62 @@ async def _handle_video_appeal(db: AsyncSession, rider: Rider, video_url: str) -
         f"We've received your verification video for claim `{str(claim.id)[:8]}`.\n\n"
         f"Our team will review and process your payout within *2 hours*.\n\n"
         f"_Thanks for your patience! 🙏_"
+    )
+
+
+async def _handle_audio_proof(db: AsyncSession, rider: Rider, audio_url: str) -> str:
+    """Store inbound audio proof for the rider's most recent claim."""
+    result = await db.execute(
+        select(Claim)
+        .where(Claim.rider_id == rider.id)
+        .order_by(Claim.created_at.desc())
+        .limit(1)
+    )
+    claim = result.scalar_one_or_none()
+
+    if not claim:
+        return "🤔 We couldn't find a claim linked to your account yet."
+
+    claim.audio_proof_url = audio_url
+    if not claim.fraud_flags:
+        claim.fraud_flags = []
+    claim.fraud_flags.append(f"[AUDIO_PROOF] {audio_url}")
+    claim.fraud_flags.append(f"[AUDIO_TIME] {datetime.utcnow().isoformat()}")
+    await db.commit()
+
+    return (
+        f"🎤 *Audio Proof Received!*\n\n"
+        f"We've attached your audio proof to claim `{str(claim.id)[:8]}`.\n"
+        f"Our team will review and update the claim shortly."
+    )
+
+
+async def _handle_photo_proof(db: AsyncSession, rider: Rider, photo_url: str) -> str:
+    """Accept any inbound photo and attach it to the rider's latest claim context."""
+    result = await db.execute(
+        select(Claim)
+        .where(Claim.rider_id == rider.id)
+        .order_by(Claim.created_at.desc())
+        .limit(1)
+    )
+    claim = result.scalar_one_or_none()
+
+    if not claim:
+        return (
+            "📷 Photo received.\n\n"
+            "We don't see a linked claim yet, but your photo was processed for demo flow."
+        )
+
+    if not claim.fraud_flags:
+        claim.fraud_flags = []
+    claim.fraud_flags.append(f"[PHOTO_PROOF] {photo_url}")
+    claim.fraud_flags.append(f"[PHOTO_TIME] {datetime.utcnow().isoformat()}")
+    await db.commit()
+
+    return (
+        f"📷 *Photo Received & Processed!*\n\n"
+        f"We've attached your photo to claim `{str(claim.id)[:8]}`.\n"
+        f"Our team will review this proof shortly."
     )
 
 
@@ -337,9 +491,9 @@ async def razorpay_payment_webhook(request: Request):
         if policy_id:
             async with AsyncSessionLocal() as db:
                 policy = await db.get(Policy, policy_id)
-                if policy and policy.status == PolicyStatus.pending:
+                if policy and policy.status == PolicyStatus.pending_payment:
                     policy.status = PolicyStatus.active
-                    policy.razorpay_payment_id = payment.get("id")
+                    policy.razorpay_order_id = payment.get("order_id") or payment.get("id")
                     await db.commit()
                     
                     # Notify rider
