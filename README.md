@@ -378,8 +378,6 @@ npm run start
 
 <div align="center">
 
-  <h2>Live Access</h2>
-
   <br>
 
   <a href="https://devtrails-hack-2026.vercel.app/">
