@@ -387,7 +387,7 @@ npm run start
   </a>
 
   <!-- <br><br> -->
-
+  <div style="height: 10px;"></div>
   <a href="https://github.com/Git-Roshan09/Devtrails-hack-2026/releases/tag/gigachad">
     <img src="https://img.shields.io/badge/Mobile_App-GitHub_Release-181717?style=for-the-badge&logo=github" alt="Mobile App Release">
   </a>
