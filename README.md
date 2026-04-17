@@ -302,5 +302,115 @@ A fully automated parametric system is highly vulnerable to GPS spoofing. If we 
 | DevOps | Docker, AWS, GitHub Actions | Containerization, deployment, CI/CD |
 
 ---
+
+## > ⚙️ 🇸‌🇪‌🇹‌🇺‌🇵‌
+
+To run GigaChad locally, you can use either:
+1. **Docker-first full stack launch** (recommended)
+2. **Manual service-by-service launch**
+
+---
+
+### ✅ Prerequisites
+
+- Python 3.11+
+- Node.js 18+ and npm
+- Docker + Docker Compose
+- Expo tooling (for mobile testing)
+- API keys/secrets for backend integrations
+
+---
+
+### 🐳 Docker Setup (Recommended)
+
+1. Create required env files:
+  - `services/backend/.env`
+  - `apps/whatsapp-bot/.env`
+2. Start everything:
+
+```bash
+docker compose up --build
+```
+
+3. Access services:
+  - Dashboard: `http://localhost:3000`
+  - Backend API: `http://localhost:8000`
+  - WhatsApp Bot: `http://localhost:3001`
+  - Neo4j Browser: `http://localhost:7474`
+
+---
+
+### 🧰 Manual Setup
+
+**Backend (FastAPI)**
+```bash
+cd services/backend
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+**Dashboard (Next.js)**
+```bash
+cd dashboard
+npm install
+npm run dev
+```
+
+**WhatsApp Bot (Node.js)**
+```bash
+cd apps/whatsapp-bot
+npm install
+npm run dev
+```
+
+**Mobile App (Expo)**
+```bash
+cd apps/mobile
+npm install
+npm run start
+```
+
+---
+
+## > 🚀 🇩‌🇪‌🇵‌🇱‌🇴‌🇾‌🇲‌🇪‌🇳‌🇹‌
+
+### 🌍 Live Frontend
+
+- **Production URL:** https://devtrails-hack-2026.vercel.app/
+
+---
+
+### 📦 Release Channel
+
+- **Deployment Source:** GitHub Releases
+- **Flow:** Tagged release -> build artifact -> deploy target update
+
+### ☁️ Live Deployment (Azure)
+
+Suggested production topology:
+- **Backend API:** Azure App Service or Azure Container Apps
+- **Dashboard:** Azure Static Web Apps or App Service
+- **PostgreSQL:** Azure Database for PostgreSQL
+- **Redis:** Azure Cache for Redis
+- **Secrets:** Azure Key Vault
+- **Observability:** Azure Monitor + Application Insights
+
+---
+
+### 🔌 Services + Ports
+
+| Service | Port | Purpose |
+| :--- | :--- | :--- |
+| postgres | 5432 | Policy, rider, claim data |
+| redis | 6379 | Cache and async state |
+| neo4j | 7474 / 7687 | Graph UI and bolt |
+| backend | 8000 | FastAPI APIs |
+| whatsapp_bot | 3001 | Twilio webhook service |
+| dashboard | 3000 | Next.js frontend |
+
+---
+
 *Built for the Guidewire DEVTrails Hackathon 2026.*
 # 𝔹𝕪 𝕋𝕖𝕒𝕞 ℕ𝕠𝕠𝕘𝕝𝕖𝕣𝕤
