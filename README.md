@@ -10,7 +10,7 @@
         <h3><i>The AI-Powered Q-Commerce Shield</i></h3>
         <p><b>"Protecting Chennai’s delivery partners from the storms they cannot control."</b></p>
         <p><b>Parametric income protection for gig workers. No forms. No waiting. Just chad energy.</b></p>
-        <p><b>Offline Voice Support: when mobile data fails, riders can call our hotline and a LiveKit + Exotel voice agent can verify incidents, answer FAQs, and trigger claims.</b></p>
+        <p><b>Offline Voice Support: when mobile data fails, riders can call our hotline and a LiveKit + Exotel voice agent (Sarvam STT + Cartesia TTS) can verify incidents, answer FAQs, trigger claims, and converse fluently in Tamil, Tanglish, English, and Hindi.</b></p>
         <p><b>Kafka Telemetry Scheduler: real-time rider signals are streamed, prioritized, and orchestrated through Kafka topics for fast, resilient claim execution.</b></p>
       </td>
     </tr>
@@ -32,7 +32,7 @@ Chennai is a fast-paced metropolis driven by a massive Q-Commerce economy (Zepto
 
 **Currently, insurance only covers accidents or vehicle damage**. There is absolutely zero safety net for **lost wages**. We built **GigaChad** to sit quietly in the background and automatically step in when Chennai turns against the worker, requiring zero claim forms and zero friction.
 
-And when connectivity collapses during storms or civic shutdowns, workers are not stranded: they can dial a phone number and talk to our multilingual voice agent to start the same protected flow.
+And when connectivity collapses during storms or civic shutdowns, workers are not stranded: they can dial a phone number and talk to our multilingual voice agent (Tamil/Tanglish/English/Hindi) to start the same protected flow.
 
 ---
 
@@ -154,9 +154,9 @@ To balance robust data tracking with gig-worker "app fatigue," GigaChad uses a t
 
 1. **Lightweight Telemetry App (Background):** A minimal, battery-optimized app the rider installs once. It runs quietly in the background, logging GPS, accelerometer data, and network state to validate their presence in a disruption zone.
 
-2. **WhatsApp Bot (Frontend UX):** Workers don't need to open our app to interact with us. Premium offers, policy renewals, weather warnings, and instant payout notifications are delivered via WhatsApp.
+2. **WhatsApp Bot (Frontend UX):** Workers don't need to open our app to interact with us. Premium offers, policy renewals, weather warnings, and instant payout notifications are delivered via WhatsApp, with multilingual conversation support in Tamil, Tanglish, English, and Hindi.
 
-3. **Voice Agent Hotline (Offline Fallback):** If a rider loses data connectivity, they can call a dedicated number. Exotel handles telephony ingress, LiveKit orchestrates the voice agent, and the same claim engine continues the workflow.
+3. **Voice Agent Hotline (Offline Fallback):** If a rider loses data connectivity, they can call a dedicated number. Exotel handles telephony ingress, LiveKit orchestrates the voice agent, and the same claim engine continues the workflow. The agent handles multilingual voice conversations with natural code-switching.
 
     </td>
   </tr>
@@ -201,8 +201,9 @@ To balance robust data tracking with gig-worker "app fatigue," GigaChad uses a t
 ### ☎️ Offline Voice Claim Support (LiveKit + Exotel)
 - Riders can directly call a mobile number during signal/data outages.
 - Exotel receives and routes the call to the LiveKit agent runtime.
-- The voice agent captures incident details (location, disruption type, idle time), performs policy and telemetry checks, and opens/verifies claims.
-- The same channel also works as a multilingual Q/A copilot for policy, premium, and payout status.
+- Speech pipeline: **Sarvam STT** transcribes rider speech and **Cartesia TTS** delivers low-latency spoken responses.
+- The voice agent captures incident details (location, disruption type, idle time), performs policy and telemetry checks, and opens/verifies claims in Tamil, Tanglish, English, or Hindi.
+- The same channel also works as a multilingual Q/A copilot for policy, premium, and payout status, with language auto-detection and seamless code-switching.
 
 ### 📡 Kafka Telemetry Scheduling Engine
 - Rider telemetry, weather feeds, traffic deltas, and voice-agent intents are published into partitioned Kafka topics.
@@ -220,7 +221,7 @@ Gig workers already run heavy, battery-draining navigation and delivery apps on 
   
 2. **The Worker Frontend (WhatsApp Bot):** All actual user interaction happens on WhatsApp, an app the rider already trusts and keeps open. Through a Twilio/Meta API integration, the bot operates in local languages (Tamil/Tanglish). It handles Sunday premium quotes, UPI payment links, storm warnings, and instant payout receipts.
 
-3. **The Voice Safety Net (Phone Call Agent):** When mobile internet is unavailable, the rider can call an Exotel number. LiveKit runs the conversational agent that asks structured claim questions, answers common doubts, validates identity/policy context, and synchronizes everything with the same backend claim engine.
+3. **The Voice Safety Net (Phone Call Agent):** When mobile internet is unavailable, the rider can call an Exotel number. LiveKit runs the conversational agent that asks structured claim questions, answers common doubts, validates identity/policy context, synchronizes everything with the same backend claim engine, and supports multilingual speech with code-switching.
 
 ---
 
@@ -289,8 +290,8 @@ Instead of relying on legacy ML, we build GigaChad using state-of-the-art **Pre-
    * **Model:** **GraphSAGE** on a **Neo4j Spatio-Temporal Graph**
    * **Implementation:** GPS spoofing rings are organized. We use pre-trained Graph embeddings to map Rider Nodes to Hex-Grid Nodes. If GraphSAGE detects an anomalous cluster (e.g., 50 riders suddenly "teleporting" to a flooded zone from different IP addresses within 30 seconds), it automatically freezes the payouts.
 5. **Voice Claim Orchestration (Conversational AI):**
-  * **Runtime:** **LiveKit Agents + Exotel Telephony**
-  * **Implementation:** The voice agent handles multilingual phone conversations, extracts structured claim entities (location, time window, disruption context), answers policy FAQs, and pushes validated call context into the same claim orchestration service.
+  * **Runtime:** **LiveKit Agents + Exotel Telephony + Sarvam STT + Cartesia TTS**
+  * **Implementation:** The voice agent handles multilingual phone conversations, converts speech-to-text via Sarvam, synthesizes responses via Cartesia, extracts structured claim entities (location, time window, disruption context), answers policy FAQs, and pushes validated call context into the same claim orchestration service.
 6. **Telemetry Stream Scheduling (Event Backbone):**
   * **Runtime:** **Apache Kafka + Consumer Workers**
   * **Implementation:** Event streams coordinate telemetry intake, disruption detection, fraud scoring, and payout jobs with ordered topic processing and retry-safe consumer groups.
@@ -339,6 +340,7 @@ A fully automated parametric system is highly vulnerable to GPS spoofing. If we 
 * **The Double-Trigger System:** Rain alone doesn't stop deliveries; waterlogging does. Our system requires a Double-Trigger: `(Rain > 30mm)` **AND** `(Traffic Speed < 5 km/h)`. This protects the insurer from paying out for harmless weather.
 * **Digital Blackout Coverage:** India frequently experiences localized internet shutdowns or gig platform server crashes. GigaChad monitors Cloudflare Radar and Downdetector; if a rider is willing to work but the digital infrastructure fails, they get paid.
 * **Offline Voice-First Claims:** Riders can call a plain phone number when internet is down. Exotel + LiveKit voice orchestration performs multilingual claim intake, policy Q/A, and backend handoff without app access.
+* **Real-Time Speech Loop:** Sarvam STT + Cartesia TTS enable fast, natural voice interactions for claim intake and support calls.
 * **Kafka-Scheduled Telemetry Pipeline:** Topic-based scheduling orchestrates high-volume event flow from rider telemetry to claim settlement with low latency and strong reliability.
 * **Predictive Earnings Copilot:** Before a storm hits, the WhatsApp bot proactively messages the rider: *"Warning: Heavy rain predicted in T. Nagar in 30 mins. Move to Alwarpet to maintain your earnings stream. If you stay, your income protection is active."*
 
@@ -355,7 +357,7 @@ A fully automated parametric system is highly vulnerable to GPS spoofing. If we 
 | Database | PostgreSQL | User, rider, policy, claim data |
 | Stream Orchestration | Apache Kafka | Telemetry scheduling, trigger pipeline, claim queue orchestration |
 | AI / Risk Engine | TimeGPT / Chronos, Llama-3 | Premium prediction, assistant/NLP flows |
-| Voice Agent & Telephony | LiveKit Agents, Exotel | Offline hotline claim intake, multilingual voice Q/A, call-to-claim orchestration |
+| Voice Agent & Telephony | LiveKit Agents, Exotel, Sarvam STT, Cartesia TTS | Offline hotline claim intake, multilingual voice Q/A, speech-to-text and text-to-speech orchestration |
 | Fraud Detection | Neo4j, PyTorch Geometric (GraphSAGE) | Spoof/ring fraud detection |
 | Messaging | WhatsApp Business API (Twilio / Meta) | Onboarding, alerts, payout notifications |
 | External Integrations | OpenWeather, TomTom Traffic, Razorpay | Disruption signals and payouts |
@@ -380,6 +382,8 @@ To run GigaChad locally, you can use either:
 - API keys/secrets for backend integrations
 - Exotel telephony credentials (SID/API key/secret)
 - LiveKit URL, API key, and secret for voice agent orchestration
+- Sarvam API key (STT)
+- Cartesia API key (TTS)
 - Apache Kafka broker access (or Dockerized Kafka)
 
 ---
