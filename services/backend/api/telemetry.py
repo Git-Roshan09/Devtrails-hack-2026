@@ -9,6 +9,7 @@ import uuid
 from database import get_db
 from models import TelemetryLog, Rider
 from engines.h3_utils import latlng_to_cell
+from engines import whatsapp as wa
 
 router = APIRouter()
 
@@ -75,6 +76,25 @@ async def ingest_telemetry(data: TelemetryPing, db: AsyncSession = Depends(get_d
     )
     db.add(log)
     await db.flush()
+
+    # ── WhatsApp: Shift-Start alert (fires only on first ping of the day) ──
+    if data.is_shift_active and rider.phone:
+        from datetime import timezone
+        from sqlalchemy import func as sqlfunc
+        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        today_count = await db.scalar(
+            select(sqlfunc.count()).select_from(TelemetryLog).where(
+                TelemetryLog.rider_id == data.rider_id,
+                TelemetryLog.is_shift_active == True,
+                TelemetryLog.ts >= today_start,
+            )
+        ) or 0
+        if today_count == 1:  # Very first ping → shift just started
+            import asyncio
+            asyncio.create_task(
+                wa.notify_shift_started(rider.name, rider.phone, log.h3_hex or "your zone")
+            )
+
     return log
 
 

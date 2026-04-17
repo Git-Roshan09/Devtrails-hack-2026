@@ -10,13 +10,10 @@ asyncpg
 sqlalchemy[asyncio]
 alembic
 redis
-neo4j
 firebase-admin
 supabase
 
 # ── AI & Agentic Framework ──────────────────────────
-crewai
-crewai-tools
 langchain
 langchain-groq
 groq

@@ -16,6 +16,7 @@ from models import (
     Rider, Policy, PolicyStatus, Claim, ClaimStatus, TelemetryLog
 )
 from engines.payout import process_disruption_claims
+from engines import notify
 
 router = APIRouter()
 
@@ -60,9 +61,12 @@ async def simulate_disruption(
     )
     db.add(event)
     await db.flush()
-    # Ensure event is visible to the background task in a separate DB session.
     await db.commit()
     background_tasks.add_task(process_disruption_claims, str(event.id))
+    # ── WhatsApp: Disruption alert to all active riders in zone ──
+    background_tasks.add_task(
+        _notify_riders_in_zone, h3_hex, req.zone, req.event_type.value
+    )
 
     return {
         "status": "disruption_simulated",
@@ -71,6 +75,33 @@ async def simulate_disruption(
         "h3_hex": h3_hex,
         "message": f"Processing claims for all active riders in {req.zone.title()} hex-grid...",
     }
+
+
+
+async def _notify_riders_in_zone(h3_hex: str, zone: str, event_type: str):
+    """Background: send WhatsApp disruption alert to all active riders in the hex zone."""
+    from database import AsyncSessionLocal
+    from datetime import timedelta
+    async with AsyncSessionLocal() as db:
+        cutoff = datetime.utcnow() - timedelta(minutes=15)
+        result = await db.execute(
+            select(Rider.name, Rider.phone)
+            .join(TelemetryLog, TelemetryLog.rider_id == Rider.id)
+            .where(
+                TelemetryLog.h3_hex == h3_hex,
+                TelemetryLog.ts >= cutoff,
+                TelemetryLog.is_shift_active == True,
+                Rider.phone != None,
+            )
+            .distinct()
+        )
+        riders = result.all()
+        print(f"[WhatsApp] Alerting {len(riders)} riders in {zone} about {event_type}")
+        for name, phone in riders:
+            await notify.send_whatsapp_storm_warning(
+                phone=phone, name=name, zone=zone.replace('_', ' ').title(),
+                minutes=5, alternative_zone="nearby zone"
+            )
 
 
 @router.post("/simulate-telemetry/{rider_id}")

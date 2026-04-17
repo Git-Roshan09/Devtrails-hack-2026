@@ -1,0 +1,38 @@
+{
+  "cli": {
+    "version": ">= 12.0.0",
+    "appVersionSource": "local"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyAhfQWcAGi4XaEk-t1So1xZ7h6M0GUmW8E",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "buildathon-376dc.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "buildathon-376dc",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "buildathon-376dc.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "37358682868",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:37358682868:web:11b40e3a81e22fcac794a1",
+        "EXPO_PUBLIC_BACKEND_URL": "https://pink-parts-fold.loca.lt"
+      }
+    },
+    "production": {
+      "android": {
+        "buildType": "app-bundle"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
