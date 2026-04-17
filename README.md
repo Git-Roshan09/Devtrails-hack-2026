@@ -10,8 +10,6 @@
         <h3><i>The AI-Powered Q-Commerce Shield</i></h3>
         <p><b>"Protecting Chennai’s delivery partners from the storms they cannot control."</b></p>
         <p><b>Parametric income protection for gig workers. No forms. No waiting. Just chad energy.</b></p>
-        <p><b>Offline Voice Support: when mobile data fails, riders can call our hotline and a LiveKit + Exotel voice agent (Sarvam STT + Cartesia TTS) can verify incidents, answer FAQs, trigger claims, and converse fluently in Tamil, Tanglish, English, and Hindi.</b></p>
-        <p><b>Kafka Telemetry Scheduler: real-time rider signals are streamed, prioritized, and orchestrated through Kafka topics for fast, resilient claim execution.</b></p>
       </td>
     </tr>
   </table>
