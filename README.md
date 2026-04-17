@@ -143,7 +143,7 @@ We specifically chose the Quick-Commerce persona for this hackathon because:
 <table>
   <tr>
     <td>
-      <img src="./assets/rc2.gif" width="200"/>
+      <img src="./assets/rc2.gif" width="250"/>
     </td>
     <td align="left">
 
