@@ -409,8 +409,6 @@ Production deployment includes three customer channels: app telemetry, WhatsApp 
 
 <div align="center">
 
-  <h2>Live Access</h2>
-
   <br>
 
   <a href="https://devtrails-hack-2026.vercel.app/">
@@ -426,7 +424,7 @@ Production deployment includes three customer channels: app telemetry, WhatsApp 
   <hr>
 
 </div>
----
+
 
 ### 🔌 Services + Ports
 
