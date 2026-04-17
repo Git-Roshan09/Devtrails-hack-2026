@@ -58,7 +58,7 @@ Chennai’s Quick-Commerce (Q-Commerce) delivery partners are the heartbeat of t
 ---
 
 # Architectural Diagram 
-![alt text](flow.jpeg)
+![alt text](./assets/flow.jpeg)
 
 ---
 
@@ -147,14 +147,32 @@ To balance robust data tracking with gig-worker "app fatigue," GigaChad uses a d
 
 ---
 
-## > 🇦‌🇧‌🇴‌🇺‌🇹‌ 🇹‌🇭‌🇪‌ 🇦‌🇵‌🇵‌: 🇹‌🇭‌🇪‌ 
+## > 🇦‌🇧‌🇴‌🇺‌🇹‌ 🇹‌🇭‌🇪‌ 🇦‌🇵‌🇵‌
 
-### APP Screenshots
+### 🎥 Prototype Preview Videos
 <table>
   <tr>
-    <td><img src="mb1.jpeg" width="200"/></td>
-    <td><img src="mb2.jpeg" width="200"/></td>
-    <td><img src="mb3.jpeg" width="200"/></td>
+    <td>
+      <video src="./assets/vd1.mp4" width="200" controls></video>
+    </td>
+    <td>
+      <video src="./assets/vd2.mp4" width="200" controls></video>
+    </td>
+    <td>
+      <video src="./assets/vd3.mp4" width="200" controls></video>
+    </td>
+    <td>
+      <video src="./assets/vd4.mp4" width="200" controls></video>
+    </td>
+  </tr>
+</table>
+
+### 📱 App Screenshots
+<table>
+  <tr>
+    <td><img src="./assets/mb1.jpeg" width="200"/></td>
+    <td><img src="./assets/mb2.jpeg" width="200"/></td>
+    <td><img src="./assets/mb3.jpeg" width="200"/></td>
   </tr>
 </table>
 
