@@ -10,6 +10,7 @@
         <h3><i>The AI-Powered Q-Commerce Shield</i></h3>
         <p><b>"Protecting Chennai’s delivery partners from the storms they cannot control."</b></p>
         <p><b>Parametric income protection for gig workers. No forms. No waiting. Just chad energy.</b></p>
+        <p><b>Offline Voice Support: when mobile data fails, riders can call our hotline and a LiveKit + Exotel voice agent can verify incidents, answer FAQs, and trigger claims.</b></p>
       </td>
     </tr>
   </table>
@@ -30,6 +31,8 @@ Chennai is a fast-paced metropolis driven by a massive Q-Commerce economy (Zepto
 
 **Currently, insurance only covers accidents or vehicle damage**. There is absolutely zero safety net for **lost wages**. We built **GigaChad** to sit quietly in the background and automatically step in when Chennai turns against the worker, requiring zero claim forms and zero friction.
 
+And when connectivity collapses during storms or civic shutdowns, workers are not stranded: they can dial a phone number and talk to our multilingual voice agent to start the same protected flow.
+
 ---
 
 ## > 🇹‌🇭‌🇪‌ 🇵‌🇷‌🇴‌🇧‌🇱‌🇪‌🇲‌: 🇹‌🇭‌🇪‌ "🇻‌🇺‌🇱‌🇳‌🇪‌🇷‌🇦‌🇧‌🇮‌🇱‌🇮‌🇹‌🇾‌ 🇬‌🇦‌🇵‌" 🇮‌🇳‌ 🇨‌🇭‌🇪‌🇳‌🇳‌🇦‌🇮‌'🇸‌ 🇬‌🇮‌🇬‌ 🇪‌🇨‌🇴‌🇳‌🇴‌🇲‌🇾‌
@@ -38,20 +41,23 @@ Chennai’s Quick-Commerce (Q-Commerce) delivery partners are the heartbeat of t
 
 1. **Hyper-Local Fragility** : Q-Commerce operates on a 10-minute delivery promise within 2-3 km radii. Unlike long-distance logistics, these "micro-zones" are highly sensitive. A localized flood in Velachery or a political rally on OMR doesn't just slow down a driver—it completely halts their ability to function.
 
-3. **The Income-Bonus Trap** : 
+2. **The Income-Bonus Trap** : 
    Gig worker earnings are heavily gamified. A significant portion of their daily take-home pay comes from "Daily Target Bonuses" (e.g., Complete 20 orders for an extra ₹400). When an external event strikes during peak hours, a worker doesn't just lose 2 hours of wages; they lose the entire bonus they worked 10 hours to achieve.
 
-4. **Insurance Misalignment** : 
+3. **Insurance Misalignment** : 
    Existing insurance products of **Zepto** for gig workers focus on vehicle repair, health, or accidents. There is zero protection for "Lost Opportunity Cost." When the city shuts down due to a cyclone, a strike, or a VVIP traffic block, the worker loses 100% of their potential income for that period, with no way to recover it.
+
+4. **Connectivity Lockout** :
+  During heavy rain, signal blackspots, or temporary internet shutdowns, workers may not be able to open apps at all. A truly resilient protection system must include a plain phone-call fallback that still verifies and processes claims.
 
 5. **Barrier** : It’s regrettable that Zomato, Swiggy, Zepto, Uber etc will now have to deduct 5% of commissions paid to delivery/driver folks and pay that to the state Govt as insurance premium. This is a great step forward for the gig economy, but it also means that the insurance product must be robust, frictionless, and truly aligned with the unique risks these workers face. GigaChad is designed to fill this critical gap, providing a much-needed financial shield for Chennai’s gig workforce. [REFER](https://www.linkedin.com/posts/jshilanjanm_its-regrettable-that-zomato-swiggy-zepto-activity-7313777872043708418-o-hu/)
 
 --- 
 
 ## > 🇹‌🇭‌🇪‌ 🇸‌🇴‌🇱‌🇺‌🇹‌🇮‌🇴‌🇳‌: 🇬‌🇮‌🇬‌🇦‌🇨‌🇭‌🇦‌🇩‌
-- GigaChad is a zero-touch, AI-powered parametric micro-insurance platform built specifically to protect Chennai’s Quick-Commerce Zepto delivery partners from immediate income loss caused by localized external disruptions. Recognizing that gig workers operate on tight weekly cash flows and suffer from "app fatigue," the platform uses a dual-interface approach: a lightweight background telemetry app for secure data logging and a multilingual WhatsApp Bot for all user interactions, from policy opt-ins to instant payout notifications.
+- GigaChad is a zero-touch, AI-powered parametric micro-insurance platform built specifically to protect Chennai’s Quick-Commerce Zepto delivery partners from immediate income loss caused by localized external disruptions. Recognizing that gig workers operate on tight weekly cash flows and suffer from "app fatigue," the platform uses a tri-channel interface: a lightweight background telemetry app for secure data logging, a multilingual WhatsApp Bot for everyday interactions, and an offline voice hotline for no-internet moments.
 
-- Unlike traditional insurance that relies on reactive, manual claims, GigaChad is entirely proactive and automated. Every Sunday, our Time-Series AI engine analyzes the upcoming week’s hyper-local forecast (weather, traffic, and civic events) to offer a fair, dynamic weekly premium via UPI. If a disruption occurs—such as severe waterlogging in Velachery or a sudden VVIP traffic gridlock—the system’s Double-Trigger logic cross-references external APIs (OpenWeather, TomTom) with the rider's live telemetry. Once the disruption is validated, the smart contract automatically calculates the wages lost during the idle hours and instantly credits the rider's bank account, requiring zero claim forms or manual intervention.
+- Unlike traditional insurance that relies on reactive, manual claims, GigaChad is entirely proactive and automated. Every Sunday, our Time-Series AI engine analyzes the upcoming week’s hyper-local forecast (weather, traffic, and civic events) to offer a fair, dynamic weekly premium via UPI. If a disruption occurs—such as severe waterlogging in Velachery or a sudden VVIP traffic gridlock—the system’s Double-Trigger logic cross-references external APIs (OpenWeather, TomTom) with the rider's live telemetry. If the worker cannot access data services, they can call the voice agent through Exotel, which orchestrates verification and claim initiation via LiveKit in the same backend flow. Once the disruption is validated, the smart contract automatically calculates the wages lost during the idle hours and instantly credits the rider's bank account, requiring zero claim forms or manual intervention.
 
 - To protect the insurer’s capital from the massive risk of GPS spoofing, GigaChad deploys an enterprise-grade fraud architecture. It moves beyond simple location checks by triangulating device sensor anomalies, network state (like suspicious home WiFi connections), and behavioral physics. Furthermore, it leverages a Neo4j Spatio-Temporal Graph Neural Network to detect coordinated syndicate attacks in real-time. If 50 riders suddenly spoof their coordinates to a flooded hex-grid simultaneously, the Graph AI flags the anomaly and halts payouts, ensuring that GigaChad remains a financially viable, highly scalable safety net that only pays genuine workers in distress.
 
@@ -112,7 +118,7 @@ We designed **GigaChad** to bypass the three major psychological barriers Hari h
 
 ### 2: App & Battery Fatigue
 * **The Problem:** Hari is already running Zepto, Google Maps, and Spotify simultaneously. His budget Android phone overheats, and battery life is his lifeline. He will delete any new app that drains his battery or requires constant foreground attention.
-* **The GigaChad Solution:** **The Dual-Interface.** We don't force him to use a heavy insurance portal. A hyper-optimized background app quietly logs telemetry (Location/Sensors). All actual interaction—buying policies, warnings, and payout alerts—happens on **WhatsApp**, an app he already has open all day.
+* **The GigaChad Solution:** **The Multi-Channel Interface.** We don't force him to use a heavy insurance portal. A hyper-optimized background app quietly logs telemetry (Location/Sensors). Day-to-day interaction happens on **WhatsApp**, and when data drops, he can continue through the voice hotline.
 
 ### 3: The Claim Nightmare
 * **The Problem:** Traditional claims require Hari to take photos, fill out English web forms, call customer care, and wait 7 days for an "adjuster" to approve it. He doesn't have the time or the language fluency for this.
@@ -130,10 +136,11 @@ We specifically chose the Quick-Commerce persona for this hackathon because:
 
 *This persona analysis drives every architectural decision in the GigaChad platform, ensuring our AI serves the worker, not just the insurer.*
 
-## > 🇹‌🇭‌🇪‌ 🇮‌🇳‌🇹‌🇪‌🇷‌🇫‌🇦‌🇨‌🇪‌ 🇸‌🇹‌🇷‌🇦‌🇹‌🇪‌🇬‌🇾‌: 🇧‌🇦‌🇨‌🇰‌🇬‌🇷‌🇴‌🇺‌🇳‌🇩‌ 🇦‌🇵‌🇵‌ + 🇼‌🇭‌🇦‌🇹‌🇸‌🇦‌🇵‌🇵‌
-To balance robust data tracking with gig-worker "app fatigue," GigaChad uses a dual-interface approach:
+## > 🇹‌🇭‌🇪‌ 🇮‌🇳‌🇹‌🇪‌🇷‌🇫‌🇦‌🇨‌🇪‌ 🇸‌🇹‌🇷‌🇦‌🇹‌🇪‌🇬‌🇾‌: 🇧‌🇦‌🇨‌🇰‌🇬‌🇷‌🇴‌🇺‌🇳‌🇩‌ 🇦‌🇵‌🇵‌ + 🇼‌🇭‌🇦‌🇹‌🇸‌🇦‌🇵‌🇵‌ + 🇻‌🇴‌🇮‌🇨‌🇪‌ 🇭‌🇴‌🇹‌🇱‌🇮‌🇳‌🇪‌
+To balance robust data tracking with gig-worker "app fatigue," GigaChad uses a tri-channel approach:
 1. **Lightweight Telemetry App (Background):** A minimal, battery-optimized app the rider installs once. It runs quietly in the background, logging GPS, accelerometer data, and network state to validate their presence in a disruption zone.
 2. **WhatsApp Bot (Frontend UX):** Workers don't need to open our app to interact with us. Premium offers, policy renewals, weather warnings, and instant payout notifications are all delivered conversationally via WhatsApp, where they already spend their time.
+3. **Voice Agent Hotline (Offline Fallback):** If a rider loses data connectivity, they can call a dedicated number. Exotel handles telephony ingress, LiveKit orchestrates the voice agent, and the same claim/risk engine continues the workflow without requiring app access.
 
 ---
 
@@ -143,7 +150,8 @@ To balance robust data tracking with gig-worker "app fatigue," GigaChad uses a d
 2. **Shift Tracking:** The rider starts their Zepto shift. The GigaChad background app begins logging telemetry data (location, movement, connectivity) securely.
 3. **Disruption Detected:** A sudden cloudburst hits Velachery. Our backend APIs trigger a "Severe Disruption" flag for that specific hex-grid.
 4. **Zero-Touch Auto-Claim:** Our backend verifies the rider's telemetry, confirming they are trapped in Velachery. The system calculates the estimated lost income for the idle hours.
-5. **Instant Payout:** The smart contract automatically executes, and the rider receives a WhatsApp alert: *"₹250 credited to your UPI for 2 hours of lost wages due to Velachery waterlogging."*
+5. **Instant Payout:** The smart contract automatically executes, and the rider receives a WhatsApp/SMS/voice confirmation: *"₹250 credited to your UPI for 2 hours of lost wages due to Velachery waterlogging."*
+6. **Offline Call Path (When Internet Fails):** If the rider cannot access WhatsApp or the app, they call the hotline, state their location/situation in Tamil or Tanglish, and the LiveKit voice agent performs guided verification, FAQs, and claim initiation through the same backend orchestration.
 
 ---
 
@@ -167,8 +175,14 @@ To balance robust data tracking with gig-worker "app fatigue," GigaChad uses a d
   </tr>
 </table>
 
-🇩‌🇺‌🇦‌🇱‌-🇮‌🇳‌🇹‌🇪‌🇷‌🇫‌🇦‌🇨‌🇪‌ 🇦‌🇷‌🇨‌🇭‌🇮‌🇹‌🇪‌🇨‌🇹‌🇺‌🇷‌🇪‌
-Gig workers already run heavy, battery-draining navigation and delivery apps on budget smartphones. Forcing them to install another heavy insurance portal leads to instant uninstalls. GigaChad solves "App Fatigue" by splitting the architecture into two distinct layers:
+### ☎️ Offline Voice Claim Support (LiveKit + Exotel)
+- Riders can directly call a mobile number during signal/data outages.
+- Exotel receives and routes the call to the LiveKit agent runtime.
+- The voice agent captures incident details (location, disruption type, idle time), performs policy and telemetry checks, and opens/verifies claims.
+- The same channel also works as a multilingual Q/A copilot for policy, premium, and payout status.
+
+🇹‌🇷‌🇮‌-🇮‌🇳‌🇹‌🇪‌🇷‌🇫‌🇦‌🇨‌🇪‌ 🇦‌🇷‌🇨‌🇭‌🇮‌🇹‌🇪‌🇨‌🇹‌🇺‌🇷‌🇪‌
+Gig workers already run heavy, battery-draining navigation and delivery apps on budget smartphones. Forcing them to install another heavy insurance portal leads to instant uninstalls. GigaChad solves "App Fatigue" by splitting the architecture into three complementary layers:
 
 <img width="1406" height="992" alt="image" src="https://github.com/user-attachments/assets/8e5af6fb-99f5-4406-bbbc-f0e951ba5b60" />
 
@@ -176,6 +190,8 @@ Gig workers already run heavy, battery-draining navigation and delivery apps on 
 1. **The Telemetry Engine (Invisible Background App):** A hyper-optimized, lightweight React Native app installed once. It operates silently in the background during active shifts, securely logging essential telemetry (GPS hex-grid location, accelerometer data, network state). It has almost zero UI and is designed to consume minimal battery, ensuring it doesn't interfere with the rider's primary apps or device performance. This data is crucial for validating claims and detecting fraud without any user interaction.
   
 2. **The Worker Frontend (WhatsApp Bot):** All actual user interaction happens on WhatsApp, an app the rider already trusts and keeps open. Through a Twilio/Meta API integration, the bot operates in local languages (Tamil/Tanglish). It handles Sunday premium quotes, UPI payment links, storm warnings, and instant payout receipts.
+
+3. **The Voice Safety Net (Phone Call Agent):** When mobile internet is unavailable, the rider can call an Exotel number. LiveKit runs the conversational agent that asks structured claim questions, answers common doubts, validates identity/policy context, and synchronizes everything with the same backend claim engine.
 
 ---
 
@@ -190,7 +206,7 @@ Standard parametric insurance fails in gig work because it uses basic logic: *If
    * *Trigger A (Cause):* OpenWeather API detects > 30mm of rain in Velachery.
    * *Trigger B (Effect):* TomTom Traffic API confirms average vehicle velocity in that grid has collapsed below 5 km/h.
 3. **NLP-Driven Social Triggers:** For strikes and curfews, a lightweight LLM (Llama-3) continuously scrapes local X (Twitter) feeds and Tamil news APIs. If it detects a 90% confidence spike in terms like *"OMR barricade"* or *"Velachery strike,"* it flags a "Social Disruption" event.
-4. **Automated Execution:** Once a grid is flagged as "Disrupted," the backend checks the Telemetry App. If Hari is verified to be active inside that hex-grid, the payout layer calculates his lost hours and triggers an instant Razorpay/UPI transfer.
+4. **Automated Execution Across Channels:** Once a grid is flagged as "Disrupted," the backend checks the Telemetry App. If Hari is verified to be active inside that hex-grid, the payout layer calculates his lost hours and triggers an instant Razorpay/UPI transfer. If Hari reaches us via phone call, voice transcripts and intent slots from the LiveKit agent are attached to the same claim case for auditable processing.
 
 
 
@@ -242,6 +258,9 @@ Instead of relying on legacy ML, we build GigaChad using state-of-the-art **Pre-
 4. **Intelligent Fraud Detection (Graph Neural Networks):**
    * **Model:** **GraphSAGE** on a **Neo4j Spatio-Temporal Graph**
    * **Implementation:** GPS spoofing rings are organized. We use pre-trained Graph embeddings to map Rider Nodes to Hex-Grid Nodes. If GraphSAGE detects an anomalous cluster (e.g., 50 riders suddenly "teleporting" to a flooded zone from different IP addresses within 30 seconds), it automatically freezes the payouts.
+5. **Voice Claim Orchestration (Conversational AI):**
+  * **Runtime:** **LiveKit Agents + Exotel Telephony**
+  * **Implementation:** The voice agent handles multilingual phone conversations, extracts structured claim entities (location, time window, disruption context), answers policy FAQs, and pushes validated call context into the same claim orchestration service.
 
 ---
 
@@ -265,6 +284,10 @@ A fully automated payout system is a massive target for fraud. We built GigaChad
   * *Scenario:* A genuine rider is caught in a storm, but extreme weather causes their GPS to drift and network to drop, causing our AI to wrongfully flag them as "suspicious."
   * *Handling:* We don't binary-reject. We issue a "Soft Flag." The worker gets a WhatsApp message asking for verification. The rider simply replies with a **10-second live video** of the flooded street. A human reviewer approves it instantly. Fraudsters at home cannot fake a live video of a flood.
 
+* **Edge Case 5: Full Data Blackout During Claim Window**
+  * *Scenario:* The rider cannot access mobile internet and cannot reach WhatsApp/app flows while trapped in disruption.
+  * *Handling:* The rider places a normal phone call to the Exotel number. The LiveKit voice agent collects claim evidence conversationally, links it to telemetry history, and keeps the payout pipeline active even without data services.
+
 --- 
 
 ## 🚨 🇪‌🇳‌🇹‌🇪‌🇷‌🇵‌🇷‌🇮‌🇸‌🇪‌-🇬‌🇷‌🇦‌🇩‌🇪‌ 🇫‌🇷‌🇦‌🇺‌🇩‌ 🇩‌🇪‌🇹‌🇪‌🇨‌🇹‌🇮‌🇴‌🇳‌
@@ -282,6 +305,7 @@ A fully automated parametric system is highly vulnerable to GPS spoofing. If we 
 ## ✨ 🇸‌🇵‌🇪‌🇨‌🇮‌🇦‌🇱‌ 🇫‌🇪‌🇦‌🇹‌🇺‌🇷‌🇪‌🇸 
 * **The Double-Trigger System:** Rain alone doesn't stop deliveries; waterlogging does. Our system requires a Double-Trigger: `(Rain > 30mm)` **AND** `(Traffic Speed < 5 km/h)`. This protects the insurer from paying out for harmless weather.
 * **Digital Blackout Coverage:** India frequently experiences localized internet shutdowns or gig platform server crashes. GigaChad monitors Cloudflare Radar and Downdetector; if a rider is willing to work but the digital infrastructure fails, they get paid.
+* **Offline Voice-First Claims:** Riders can call a plain phone number when internet is down. Exotel + LiveKit voice orchestration performs multilingual claim intake, policy Q/A, and backend handoff without app access.
 * **Predictive Earnings Copilot:** Before a storm hits, the WhatsApp bot proactively messages the rider: *"Warning: Heavy rain predicted in T. Nagar in 30 mins. Move to Alwarpet to maintain your earnings stream. If you stay, your income protection is active."*
 
 ---
@@ -296,6 +320,7 @@ A fully automated parametric system is highly vulnerable to GPS spoofing. If we 
 | Backend APIs | Python (FastAPI), Node.js | Triggers, claim workflow, automation |
 | Database | PostgreSQL | User, rider, policy, claim data |
 | AI / Risk Engine | TimeGPT / Chronos, Llama-3 | Premium prediction, assistant/NLP flows |
+| Voice Agent & Telephony | LiveKit Agents, Exotel | Offline hotline claim intake, multilingual voice Q/A, call-to-claim orchestration |
 | Fraud Detection | Neo4j, PyTorch Geometric (GraphSAGE) | Spoof/ring fraud detection |
 | Messaging | WhatsApp Business API (Twilio / Meta) | Onboarding, alerts, payout notifications |
 | External Integrations | OpenWeather, TomTom Traffic, Razorpay | Disruption signals and payouts |
@@ -318,6 +343,8 @@ To run GigaChad locally, you can use either:
 - Docker + Docker Compose
 - Expo tooling (for mobile testing)
 - API keys/secrets for backend integrations
+- Exotel telephony credentials (SID/API key/secret)
+- LiveKit URL, API key, and secret for voice agent orchestration
 
 ---
 
@@ -326,17 +353,19 @@ To run GigaChad locally, you can use either:
 1. Create required env files:
   - `services/backend/.env`
   - `apps/whatsapp-bot/.env`
-2. Start everything:
+2. Add voice channel credentials in backend env (`EXOTEL_*`, `LIVEKIT_*`) so hotline calls can route into the claim orchestration pipeline.
+3. Start everything:
 
 ```bash
 docker compose up --build
 ```
 
-3. Access services:
+4. Access services:
   - Dashboard: `http://localhost:3000`
   - Backend API: `http://localhost:8000`
   - WhatsApp Bot: `http://localhost:3001`
   - Neo4j Browser: `http://localhost:7474`
+  - Voice Hotline: Exotel managed number mapped to your LiveKit agent webhook
 
 ---
 
@@ -376,6 +405,8 @@ npm run start
 
 ## > 🇩‌🇪‌🇵‌🇱‌🇴‌🇾‌🇲‌🇪‌🇳‌🇹‌
 
+Production deployment includes three customer channels: app telemetry, WhatsApp bot, and voice hotline (Exotel ingress -> LiveKit agent -> backend claim APIs). This ensures support continuity even during internet outages.
+
 <div align="center">
 
   <h2>Live Access</h2>
@@ -406,6 +437,8 @@ npm run start
 | neo4j | 7474 / 7687 | Graph UI and bolt |
 | backend | 8000 | FastAPI APIs |
 | whatsapp_bot | 3001 | Twilio webhook service |
+| livekit (self-hosted optional) | 7880 / 7881 | Voice agent runtime and media signaling |
+| exotel (managed) | N/A | Public phone ingress and call routing |
 | dashboard | 3000 | Next.js frontend |
 
 ---
