@@ -150,22 +150,13 @@ To balance robust data tracking with gig-worker "app fatigue," GigaChad uses a d
 ## > 🇦‌🇧‌🇴‌🇺‌🇹‌ 🇹‌🇭‌🇪‌ 🇦‌🇵‌🇵‌
 
 ### 🎥 Prototype Preview Videos
-<table>
-  <tr>
-    <td>
-      ![▶ Watch Video 1](./assets/vd1.mp4)
-    </td>
-    <td>
-      ![▶ Watch Video 2](./assets/vd2.mp4)
-    </td>
-    <td>
-      ![▶ Watch Video 3](./assets/vd3.mp4)
-    </td>
-    <td>
-      ![▶ Watch Video 4](./assets/vd4.mp4)
-    </td>
-  </tr>
-</table>
+<div align="center">
+
+| | | | |
+|:---:|:---:|:---:|:---:|
+| ![Preview 1](./assets/vd1.gif) | ![Preview 2](./assets/vd2.gif) | ![Preview 3](./assets/vd3.gif) | ![Preview 4](./assets/vd4.gif) |
+
+</div>
 
 ### 📱 App Screenshots
 <table>
