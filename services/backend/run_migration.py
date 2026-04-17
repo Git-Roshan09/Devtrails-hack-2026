@@ -8,8 +8,7 @@ import os
 from pathlib import Path
 
 DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql+asyncpg://postgres:devtrails%40123456@db.aceaszongiehzwvxirtt.supabase.co:5432/postgres",
+    "DATABASE_URL"
 )
 
 # Convert SQLAlchemy URL → raw asyncpg DSN
