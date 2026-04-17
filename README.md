@@ -137,6 +137,15 @@ We specifically chose the Quick-Commerce persona for this hackathon because:
 *This persona analysis drives every architectural decision in the GigaChad platform, ensuring our AI serves the worker, not just the insurer.*
 
 ## > 🇹‌🇭‌🇪‌ 🇮‌🇳‌🇹‌🇪‌🇷‌🇫‌🇦‌🇨‌🇪‌ 🇸‌🇹‌🇷‌🇦‌🇹‌🇪‌🇬‌🇾‌: 🇧‌🇦‌🇨‌🇰‌🇬‌🇷‌🇴‌🇺‌🇳‌🇩‌ 🇦‌🇵‌🇵‌ + 🇼‌🇭‌🇦‌🇹‌🇸‌🇦‌🇵‌🇵‌ + 🇻‌🇴‌🇮‌🇨‌🇪‌ 🇭‌🇴‌🇹‌🇱‌🇮‌🇳‌🇪‌
+
+<div align="center">
+
+| |
+|:---:|
+| ![Preview](./assets/rc2.gif) |
+
+</div>
+
 To balance robust data tracking with gig-worker "app fatigue," GigaChad uses a tri-channel approach:
 1. **Lightweight Telemetry App (Background):** A minimal, battery-optimized app the rider installs once. It runs quietly in the background, logging GPS, accelerometer data, and network state to validate their presence in a disruption zone.
 2. **WhatsApp Bot (Frontend UX):** Workers don't need to open our app to interact with us. Premium offers, policy renewals, weather warnings, and instant payout notifications are all delivered conversationally via WhatsApp, where they already spend their time.
