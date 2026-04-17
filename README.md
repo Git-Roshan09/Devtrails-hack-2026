@@ -140,16 +140,26 @@ We specifically chose the Quick-Commerce persona for this hackathon because:
 
 <div align="center">
 
-| |
-|:---:|
-| ![Preview](./assets/rc2.gif) |
-
-</div>
+<table>
+  <tr>
+    <td>
+      <img src="./assets/rc2.gif" width="300"/>
+    </td>
+    <td align="left">
 
 To balance robust data tracking with gig-worker "app fatigue," GigaChad uses a tri-channel approach:
+
 1. **Lightweight Telemetry App (Background):** A minimal, battery-optimized app the rider installs once. It runs quietly in the background, logging GPS, accelerometer data, and network state to validate their presence in a disruption zone.
-2. **WhatsApp Bot (Frontend UX):** Workers don't need to open our app to interact with us. Premium offers, policy renewals, weather warnings, and instant payout notifications are all delivered conversationally via WhatsApp, where they already spend their time.
-3. **Voice Agent Hotline (Offline Fallback):** If a rider loses data connectivity, they can call a dedicated number. Exotel handles telephony ingress, LiveKit orchestrates the voice agent, and the same claim/risk engine continues the workflow without requiring app access.
+
+2. **WhatsApp Bot (Frontend UX):** Workers don't need to open our app to interact with us. Premium offers, policy renewals, weather warnings, and instant payout notifications are delivered via WhatsApp.
+
+3. **Voice Agent Hotline (Offline Fallback):** If a rider loses data connectivity, they can call a dedicated number. Exotel handles telephony ingress, LiveKit orchestrates the voice agent, and the same claim engine continues the workflow.
+
+    </td>
+  </tr>
+</table>
+
+</div>
 
 ---
 
