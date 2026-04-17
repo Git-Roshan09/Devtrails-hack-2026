@@ -53,21 +53,22 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col items-center justify-center font-sans tracking-wide py-12 p-4">
-      <div className="max-w-md w-full bg-[#111] border border-[#1e1e1e] p-8 rounded-2xl shadow-xl">
-        <div className="flex flex-col items-center mb-6">
-          <Image src="/logo.png" alt="GigaChad" width={64} height={64} className="mb-3" />
-          <h1 className="text-2xl font-black text-[#00e676] tracking-wider text-center">START YOUR SHIFT SAFE</h1>
+    <div className="min-h-screen bg-background text-white font-body py-12 p-4 flex flex-col items-center justify-center">
+      <div className="max-w-md w-full bg-surface border border-surface-2 p-8 rounded-xl shadow-2xl">
+        <div className="flex flex-col items-start mb-8 text-left border-b border-surface-2 pb-6">
+          <Image src="/logo.png" alt="GigaChad" width={48} height={48} className="mb-4 rounded-xl" />
+          <h1 className="text-2xl lg:text-3xl font-display font-black text-white tracking-tight">Create Account</h1>
+          <p className="text-muted text-sm mt-1">Start your shift safe with automated parametric coverage.</p>
         </div>
 
-        {error && <p className="text-red-500 text-sm mb-4 text-center">{error}</p>}
+        {error && <p className="text-red-500 text-sm mb-6 bg-red-500/10 p-3 rounded-lg border border-red-500/20">{error}</p>}
 
-        <form onSubmit={handleRegister} className="space-y-4">
+        <form onSubmit={handleRegister} className="space-y-5">
           <div>
-            <label className="text-xs text-[#888] font-bold mb-1 block">FULL NAME</label>
-            <input 
-              type="text" 
-              className="w-full bg-[#1a1a1a] text-white border border-[#333] rounded-lg px-4 py-3 focus:outline-none focus:border-[#00e676]"
+            <label className="text-xs text-muted font-semibold tracking-wide mb-2 block">FULL NAME</label>
+            <input
+              type="text"
+              className="w-full bg-surface-2 text-white border border-surface-2 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-primary transition-colors"
               placeholder="Ravi Shankar"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -75,10 +76,10 @@ export default function Register() {
             />
           </div>
           <div>
-            <label className="text-xs text-[#888] font-bold mb-1 block">PHONE NUMBER</label>
-            <input 
-              type="tel" 
-              className="w-full bg-[#1a1a1a] text-white border border-[#333] rounded-lg px-4 py-3 focus:outline-none focus:border-[#00e676]"
+            <label className="text-xs text-muted font-semibold tracking-wide mb-2 block">PHONE NUMBER</label>
+            <input
+              type="tel"
+              className="w-full bg-surface-2 text-white border border-surface-2 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-primary transition-colors"
               placeholder="+919876543210"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
@@ -86,10 +87,10 @@ export default function Register() {
             />
           </div>
           <div>
-            <label className="text-xs text-[#888] font-bold mb-1 block">EMAIL</label>
-            <input 
-              type="email" 
-              className="w-full bg-[#1a1a1a] text-white border border-[#333] rounded-lg px-4 py-3 focus:outline-none focus:border-[#00e676]"
+            <label className="text-xs text-muted font-semibold tracking-wide mb-2 block">EMAIL ADDRESS</label>
+            <input
+              type="email"
+              className="w-full bg-surface-2 text-white border border-surface-2 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-primary transition-colors"
               placeholder="rider@gigachad.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -97,10 +98,10 @@ export default function Register() {
             />
           </div>
           <div>
-            <label className="text-xs text-[#888] font-bold mb-1 block">PASSWORD</label>
-            <input 
-              type="password" 
-              className="w-full bg-[#1a1a1a] text-white border border-[#333] rounded-lg px-4 py-3 focus:outline-none focus:border-[#00e676]"
+            <label className="text-xs text-muted font-semibold tracking-wide mb-2 block">PASSWORD</label>
+            <input
+              type="password"
+              className="w-full bg-surface-2 text-white border border-surface-2 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-primary transition-colors"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -108,17 +109,17 @@ export default function Register() {
             />
           </div>
 
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             disabled={loading}
-            className="w-full bg-[#00e676] text-black font-bold py-3 rounded-xl hover:bg-[#00c853] transition-colors mt-6 disabled:opacity-50"
+            className="w-full bg-primary text-inverse font-semibold text-sm py-3 rounded-lg hover:bg-[#00c853] transition-colors mt-4 disabled:opacity-50"
           >
-            {loading ? "CREATING ACCOUNT..." : "REGISTER NOW"}
+            {loading ? "Creating Profile..." : "Register Now"}
           </button>
         </form>
 
-        <div className="mt-6 text-center text-sm text-[#555]">
-          Already registered? <a href="/" className="text-[#00e676] hover:underline">Sign In</a>
+        <div className="mt-8 text-center text-sm text-muted">
+          Already registered? <a href="/" className="text-primary hover:underline font-medium">Sign In</a>
         </div>
       </div>
     </div>

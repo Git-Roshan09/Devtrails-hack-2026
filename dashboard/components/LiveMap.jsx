@@ -38,7 +38,7 @@ const createZoneIcon = (status, name) => {
     safe: { bg: "#22c55e", border: "#16a34a" },
   };
   const color = colors[status] || colors.safe;
-  
+
   return L.divIcon({
     className: "zone-marker",
     html: `
@@ -116,10 +116,10 @@ export default function LiveMap({ riderLocation, zones }) {
 
     // Add popup to rider marker
     riderMarkerRef.current.bindPopup(`
-      <div style="text-align: center; padding: 5px;">
-        <strong style="color: #00e676;">🛵 You are here</strong><br/>
-        <small>Lat: ${riderLocation.lat.toFixed(4)}</small><br/>
-        <small>Lng: ${riderLocation.lng.toFixed(4)}</small>
+      <div style="text-align: center; padding: 5px; font-family: inherit;">
+        <strong style="color: #00e676; font-size: 11px; text-transform: uppercase;">Your Location</strong><br/>
+        <small style="color:#888">Lat: ${riderLocation.lat.toFixed(4)}</small><br/>
+        <small style="color:#888">Lng: ${riderLocation.lng.toFixed(4)}</small>
       </div>
     `);
 
@@ -138,7 +138,7 @@ export default function LiveMap({ riderLocation, zones }) {
   useEffect(() => {
     if (riderMarkerRef.current && riderLocation) {
       riderMarkerRef.current.setLatLng([riderLocation.lat, riderLocation.lng]);
-      
+
       // Update popup content
       riderMarkerRef.current.setPopupContent(`
         <div style="text-align: center; padding: 5px;">

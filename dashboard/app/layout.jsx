@@ -13,7 +13,7 @@ export default function RootLayout({ children }) {
         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
         <link rel="icon" href="/logo.png" />
       </head>
-      <body style={{ margin: 0, fontFamily: "'Inter', sans-serif", backgroundColor: "#0a0a0a" }}>
+      <body className="antialiased bg-background text-white font-body selection:bg-primary/30">
         <AuthProvider>
           {children}
         </AuthProvider>

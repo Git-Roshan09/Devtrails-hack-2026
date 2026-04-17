@@ -10,6 +10,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.101.1",
     "axios": "^1.6.8",
+    "clsx": "^2.1.1",
     "firebase": "^12.11.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.378.0",
@@ -17,7 +18,8 @@
     "react": "^18",
     "react-dom": "^18",
     "react-leaflet": "^4.2.1",
-    "recharts": "^2.12.7"
+    "recharts": "^2.12.7",
+    "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
     "@types/node": "^20",
