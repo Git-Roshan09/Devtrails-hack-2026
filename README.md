@@ -153,16 +153,16 @@ To balance robust data tracking with gig-worker "app fatigue," GigaChad uses a d
 <table>
   <tr>
     <td>
-      ![alt text](./assets/flow.jpeg)
-    </td>
-    <td>
       ![▶ Watch Video 1](./assets/vd1.mp4)
     </td>
     <td>
-      <video src="./assets/vd3.mp4" width="200" controls></video>
+      ![▶ Watch Video 2](./assets/vd2.mp4)
     </td>
     <td>
-      <video src="./assets/vd4.mp4" width="200" controls></video>
+      ![▶ Watch Video 3](./assets/vd3.mp4)
+    </td>
+    <td>
+      ![▶ Watch Video 4](./assets/vd4.mp4)
     </td>
   </tr>
 </table>
