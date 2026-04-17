@@ -78,9 +78,9 @@ export default function Home() {
       <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col items-center justify-center font-sans tracking-wide p-4">
         <div className="w-full max-w-5xl flex flex-col md:flex-row items-center justify-center gap-8">
           <div className="w-full max-w-md bg-[#111] border border-[#1e1e1e] p-8 rounded-2xl shadow-xl">
-            <div className="flex flex-col items-center mb-6">
+            <div className="flex flex-col items-center mb-3">
               <Image src="/logo.png" alt="GigaChad" width={80} height={80} />
-              <h1 className="text-3xl font-black text-[#00e676] tracking-wider text-center mt-3">GIGACHAD</h1>
+              <h1 className="text-3xl font-black text-[#00e676] tracking-wider text-center">GIGACHAD</h1>
               <p className="text-[#555] text-sm text-center mt-1">AI-Powered Income Protection</p>
             </div>
 

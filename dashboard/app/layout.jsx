@@ -11,6 +11,7 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <head>
         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+        <link rel="icon" href="/logo.png" />
       </head>
       <body style={{ margin: 0, fontFamily: "'Inter', sans-serif", backgroundColor: "#0a0a0a" }}>
         <AuthProvider>
