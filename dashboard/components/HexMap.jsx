@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useRef } from "react";
 
-// Chennai approx bounding: 12.85 – 13.15 lat, 80.05 – 80.35 lng
 const CHENNAI_CENTER = [13.0, 80.2];
 
 export default function HexMap({ disruptions = [] }) {
@@ -11,7 +10,7 @@ export default function HexMap({ disruptions = [] }) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (mapInstanceRef.current) return; // Already initialized
+    if (mapInstanceRef.current) return;
 
     const L = require("leaflet");
 
@@ -27,13 +26,12 @@ export default function HexMap({ disruptions = [] }) {
       maxZoom: 19,
     }).addTo(map);
 
-    // Add Chennai micro-zone markers
     const zones = [
-      { name: "Velachery", lat: 12.9789, lng: 80.218,  color: "#00e676" },
-      { name: "OMR",       lat: 12.901,  lng: 80.2279, color: "#00e676" },
-      { name: "T. Nagar",  lat: 13.0418, lng: 80.2341, color: "#00e676" },
-      { name: "Anna Nagar",lat: 13.0891, lng: 80.2152, color: "#00e676" },
-      { name: "Tambaram",  lat: 12.9249, lng: 80.1,    color: "#00e676" },
+      { name: "Velachery", lat: 12.9789, lng: 80.218, color: "#00e676" },
+      { name: "OMR", lat: 12.901, lng: 80.2279, color: "#00e676" },
+      { name: "T. Nagar", lat: 13.0418, lng: 80.2341, color: "#00e676" },
+      { name: "Anna Nagar", lat: 13.0891, lng: 80.2152, color: "#00e676" },
+      { name: "Tambaram", lat: 12.9249, lng: 80.1, color: "#00e676" },
     ];
 
     zones.forEach(z => {
@@ -44,11 +42,11 @@ export default function HexMap({ disruptions = [] }) {
         fillOpacity: 0.08,
         weight: 1.5,
         dashArray: "4 4",
-      }).addTo(map).bindPopup(`<b>${z.name}</b><br>GigaChad Zone ✅`);
+      }).addTo(map).bindPopup(`<b>${z.name}</b><br><span style="color:#00e676;font-size:11px">GigaChad Covered ✓</span>`);
 
       L.marker([z.lat, z.lng], {
         icon: L.divIcon({
-          html: `<div style="background:#0a1a0a;border:1px solid ${z.color};border-radius:6px;padding:2px 6px;font-size:11px;color:${z.color};white-space:nowrap;font-weight:700">${z.name}</div>`,
+          html: `<div style="background:var(--color-surface);border:1px solid ${z.color};border-radius:6px;padding:2px 6px;font-size:11px;color:${z.color};white-space:nowrap;font-weight:700">${z.name}</div>`,
           className: "",
           iconAnchor: [30, 10],
         }),
@@ -59,7 +57,6 @@ export default function HexMap({ disruptions = [] }) {
     mapInstanceRef.current = map;
   }, []);
 
-  // Update disruption overlays when disruptions change
   useEffect(() => {
     if (!mapInstanceRef.current || !layerGroupRef.current) return;
     const L = require("leaflet");
@@ -67,30 +64,28 @@ export default function HexMap({ disruptions = [] }) {
     layerGroupRef.current.clearLayers();
 
     disruptions.forEach(d => {
-      // Find zone coordinates
       const zoneCoords = {
         velachery: [12.9789, 80.218],
-        omr:       [12.901,  80.2279],
-        t_nagar:   [13.0418, 80.2341],
-        anna_nagar:[13.0891, 80.2152],
-        tambaram:  [12.9249, 80.1],
+        omr: [12.901, 80.2279],
+        t_nagar: [13.0418, 80.2341],
+        anna_nagar: [13.0891, 80.2152],
+        tambaram: [12.9249, 80.1],
       };
       const zoneName = d.zone_name?.toLowerCase().replace(" ", "_") || "velachery";
       const coords = zoneCoords[zoneName] || zoneCoords.velachery;
 
-      // Pulsing red disruption circle
       L.circleMarker(coords, {
         radius: 40,
-        color: "#ff3b3b",
-        fillColor: "#ff3b3b",
+        color: "#ef4444",
+        fillColor: "#ef4444",
         fillOpacity: 0.18,
         weight: 2,
       }).addTo(layerGroupRef.current)
         .bindPopup(`
-          <div style="font-family:monospace;font-size:12px">
-            <b>🌊 ${d.zone_name} — ${d.event_type}</b><br>
-            Rain: ${d.rain_mm || "?"}mm | Traffic: ${d.traffic_kmh || "?"}km/h<br>
-            <span style="color:#ff9800">DISRUPTION ACTIVE</span>
+          <div style="font-family:inherit;font-size:12px;padding:4px">
+            <b style="color:#ef4444;font-size:11px;text-transform:uppercase;letter-spacing:0.5px">${d.zone_name} — ${d.event_type}</b><br>
+            <span style="color:#888888">Rain: ${d.rain_mm || "?"}mm | Traffic: ${d.traffic_kmh || "?"}km/h</span><br>
+            <span style="color:#f59e0b;font-weight:bold;font-size:10px">ACTIVE DISRUPTION</span>
           </div>
         `);
     });
@@ -99,7 +94,7 @@ export default function HexMap({ disruptions = [] }) {
   return (
     <div
       ref={mapRef}
-      style={{ height: "420px", width: "100%", backgroundColor: "#0a0a0a" }}
+      style={{ height: "420px", width: "100%", backgroundColor: "var(--color-surface, #111111)" }}
     />
   );
 }

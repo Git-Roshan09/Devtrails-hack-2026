@@ -5,6 +5,7 @@ import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/aut
 import { auth } from "../firebase";
 import { useAuth } from "./AuthContext";
 import Image from "next/image";
+import { Target, Building2, Bike, Clapperboard, ChevronRight } from "lucide-react";
 
 export default function Home() {
   const [email, setEmail] = useState("");
@@ -37,14 +38,11 @@ export default function Home() {
     }
   };
 
-  // Mock login for evaluators - bypasses Firebase auth
   const handleMockLogin = async (role) => {
     setMockLoading(role);
-    // Simulate a brief loading state for realism
     await new Promise(resolve => setTimeout(resolve, 800));
-    
+
     if (role === "admin") {
-      // Store mock session
       sessionStorage.setItem("mockUser", JSON.stringify({ email: "admin@gigachad.com", role: "admin" }));
       router.push("/admin/dashboard");
     } else {
@@ -75,72 +73,101 @@ export default function Home() {
 
   return (
     <>
-      <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col items-center justify-center font-sans tracking-wide p-4">
-        <div className="w-full max-w-5xl flex flex-col md:flex-row items-center justify-center gap-8">
-          <div className="w-full max-w-md bg-[#111] border border-[#1e1e1e] p-8 rounded-2xl shadow-xl">
-            <div className="flex flex-col items-center mb-6">
-              <Image src="/logo.png" alt="GigaChad" width={80} height={80} />
-              <h1 className="text-3xl font-black text-[#00e676] tracking-wider text-center mt-3">GIGACHAD</h1>
-              <p className="text-[#555] text-sm text-center mt-1">AI-Powered Income Protection</p>
+      <div className="min-h-screen bg-background text-white font-body p-4 md:p-8 flex items-center justify-center">
+        <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-16 items-center">
+
+          {/* Left Hero / Demo Section (Replaces centered landing pattern) */}
+          <div className="flex flex-col items-start text-left space-y-6 order-2 md:order-1">
+            <div className="flex items-center gap-4">
+              <Image src="/logo.png" alt="GigaChad" width={64} height={64} className="rounded-xl" />
+              <div>
+                <h1 className="text-3xl lg:text-5xl font-black text-primary tracking-tight">GIGACHAD</h1>
+                <p className="text-muted text-sm lg:text-base font-medium">AI-Powered Income Protection</p>
+              </div>
             </div>
 
-            {error && <p className="text-red-500 text-sm mb-4 text-center">{error}</p>}
-            {message && <p className="text-green-500 text-sm mb-4 text-center">{message}</p>}
+            <h2 className="text-2xl lg:text-4xl font-display font-medium leading-tight max-w-xl text-white mt-4">
+              Providing frictionless micro-insurance for Q-Commerce delivery partners.
+            </h2>
 
-            <div className="mb-6">
-              <p className="text-xs text-[#888] font-bold mb-3 text-center uppercase tracking-wider">🎯 Quick Login for Evaluators</p>
+            <p className="text-muted text-base max-w-lg leading-relaxed">
+              No forms, no waiting, no hassle. Payouts triggered automatically based on accurate local weather and traffic parameters.
+            </p>
+
+          </div>
+
+          {/* Right Login Section */}
+          <div className="w-full max-w-md mx-auto bg-surface border border-surface-2 p-8 rounded-xl shadow-2xl order-1 md:order-2">
+            {error && <p className="text-red-500 text-sm mb-4 bg-red-500/10 p-3 rounded-lg">{error}</p>}
+            {message && <p className="text-primary text-sm mb-4 bg-primary/10 p-3 rounded-lg">{message}</p>}
+
+            <div className="mb-8">
+              <div className="flex items-center gap-2 mb-4">
+                <Target className="w-4 h-4 text-primary" />
+                <p className="text-xs text-muted font-semibold uppercase tracking-wider">Quick Evaluator Access</p>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => handleMockLogin("admin")}
                   disabled={mockLoading}
-                  className="flex flex-col items-center gap-2 p-4 bg-[#1a1a1a] border border-[#333] rounded-xl hover:border-[#00e676] hover:bg-[#001a0d] transition-all group"
+                  className="flex flex-col items-start gap-3 p-4 bg-surface-2 border border-surface-2 rounded-lg hover:border-primary/50 transition-colors text-left"
                 >
-                  <span className="text-2xl">👨‍💼</span>
-                  <span className="text-sm font-bold text-[#888] group-hover:text-[#00e676]">
-                    {mockLoading === "admin" ? "Loading..." : "Admin View"}
-                  </span>
-                  <span className="text-[10px] text-[#555]">Insurer Dashboard</span>
+                  <Building2 className={`w-6 h-6 ${mockLoading === "admin" ? "animate-pulse text-primary" : "text-white"}`} />
+                  <div>
+                    <span className="block text-sm font-semibold text-white">
+                      {mockLoading === "admin" ? "Loading..." : "Insurer"}
+                    </span>
+                    <span className="block text-xs text-muted mt-1">Admin Panel</span>
+                  </div>
                 </button>
                 <button
                   onClick={() => handleMockLogin("rider")}
                   disabled={mockLoading}
-                  className="flex flex-col items-center gap-2 p-4 bg-[#1a1a1a] border border-[#333] rounded-xl hover:border-[#00e676] hover:bg-[#001a0d] transition-all group"
+                  className="flex flex-col items-start gap-3 p-4 bg-surface-2 border border-surface-2 rounded-lg hover:border-primary/50 transition-colors text-left"
                 >
-                  <span className="text-2xl">🛵</span>
-                  <span className="text-sm font-bold text-[#888] group-hover:text-[#00e676]">
-                    {mockLoading === "rider" ? "Loading..." : "Rider View"}
-                  </span>
-                  <span className="text-[10px] text-[#555]">Delivery Partner</span>
+                  <Bike className={`w-6 h-6 ${mockLoading === "rider" ? "animate-pulse text-primary" : "text-white"}`} />
+                  <div>
+                    <span className="block text-sm font-semibold text-white">
+                      {mockLoading === "rider" ? "Loading..." : "Rider"}
+                    </span>
+                    <span className="block text-xs text-muted mt-1">Partner App</span>
+                  </div>
                 </button>
               </div>
             </div>
 
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-[#333]"></div>
-              </div>
-              <div className="relative flex justify-center text-xs">
-                <span className="bg-[#111] px-3 text-[#555]">or sign in with credentials</span>
-              </div>
+            <div className="flex items-center mb-8">
+              <div className="flex-1 border-t border-surface-2"></div>
+              <span className="bg-surface px-4 text-xs text-muted font-medium">or login manually</span>
+              <div className="flex-1 border-t border-surface-2"></div>
             </div>
 
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form onSubmit={handleLogin} className="space-y-5">
               <div>
-                <label className="text-xs text-[#888] font-bold mb-1 block">EMAIL</label>
+                <label className="text-xs text-muted font-semibold mb-2 block tracking-wide">EMAIL ADDRESS</label>
                 <input
                   type="email"
-                  className="w-full bg-[#1a1a1a] text-white border border-[#333] rounded-lg px-4 py-3 focus:outline-none focus:border-[#00e676] transition-colors"
-                  placeholder="rider@example.com"
+                  className="w-full bg-surface-2 text-white border border-surface-2 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-primary transition-colors"
+                  placeholder="name@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
                 />
               </div>
               <div>
-                <label className="text-xs text-[#888] font-bold mb-1 block">PASSWORD</label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs text-muted font-semibold tracking-wide">PASSWORD</label>
+                  <button
+                    type="button"
+                    onClick={() => { setShowResetModal(true); setResetEmail(email); setError(""); }}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    Reset
+                  </button>
+                </div>
                 <input
                   type="password"
-                  className="w-full bg-[#1a1a1a] text-white border border-[#333] rounded-lg px-4 py-3 focus:outline-none focus:border-[#00e676] transition-colors"
+                  className="w-full bg-surface-2 text-white border border-surface-2 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-primary transition-colors"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -148,64 +175,32 @@ export default function Home() {
                 />
               </div>
 
-              <button type="submit" className="w-full bg-[#00e676] text-black font-bold py-3 rounded-xl hover:bg-[#00c853] transition-colors mt-6">
-                SIGN IN
+              <button type="submit" className="w-full bg-primary text-inverse font-semibold text-sm py-3 rounded-lg hover:bg-[#00c853] transition-colors mt-2">
+                Sign into Account
               </button>
             </form>
 
-            <div className="mt-4 text-center">
-              <button
-                onClick={() => { setShowResetModal(true); setResetEmail(email); setError(""); }}
-                className="text-sm text-[#888] hover:text-[#00e676] transition-colors"
-              >
-                Forgot Password?
-              </button>
-            </div>
-
-            <div className="mt-4 text-center text-sm text-[#555]">
-              New Rider? <a href="/register" className="text-[#00e676] hover:underline">Create an Account</a>
+            <div className="mt-6 pt-6 border-t border-surface-2 text-center text-sm text-muted">
+              New to GigaChad? <a href="/register" className="text-primary hover:underline font-medium">Create an Account</a>
             </div>
           </div>
-
-          <div className="hidden md:flex flex-col items-center justify-center shrink-0">
-            <button
-              onClick={() => router.push("/demo")}
-              className="w-44 h-44 rounded-2xl border-2 border-dashed border-[#00e676] text-[#00e676] font-bold hover:bg-[#00e676]/10 transition-all group flex flex-col items-center justify-center gap-3"
-            >
-              <span className="text-5xl">🎬</span>
-              <span className="text-sm text-center px-2">WATCH PRODUCT DEMO</span>
-            </button>
-            <p className="text-[#555] text-xs mt-3 text-center">See the full workflow in action</p>
-          </div>
-        </div>
-
-        <div className="md:hidden mt-6 w-full max-w-md">
-          <button
-            onClick={() => router.push("/demo")}
-            className="w-full py-4 rounded-xl border-2 border-dashed border-[#00e676] text-[#00e676] font-bold hover:bg-[#00e676]/10 transition-all"
-          >
-            <span className="flex items-center justify-center gap-2">
-              <span className="text-xl">🎬</span>
-              <span>WATCH PRODUCT DEMO</span>
-            </span>
-          </button>
         </div>
       </div>
 
       {showResetModal && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="bg-[#111] border border-[#1e1e1e] p-6 rounded-2xl w-full max-w-sm mx-4">
-            <h2 className="text-xl font-bold text-[#00e676] mb-4">Reset Password</h2>
-            <p className="text-sm text-[#888] mb-4">Enter your email to receive a password reset link.</p>
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-surface border border-surface-2 p-6 rounded-xl w-full max-w-sm">
+            <h2 className="text-xl font-display font-semibold text-white mb-2">Reset Password</h2>
+            <p className="text-sm text-muted mb-6">Enter your email to receive a password reset link.</p>
 
             {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-            {message && <p className="text-green-500 text-sm mb-4">{message}</p>}
+            {message && <p className="text-primary text-sm mb-4">{message}</p>}
 
             <form onSubmit={handlePasswordReset}>
               <input
                 type="email"
-                className="w-full bg-[#1a1a1a] text-white border border-[#333] rounded-lg px-4 py-3 mb-4 focus:outline-none focus:border-[#00e676]"
-                placeholder="rider@example.com"
+                className="w-full bg-surface-2 text-white border border-surface-2 rounded-lg px-4 py-3 mb-6 text-sm focus:outline-none focus:border-primary"
+                placeholder="name@example.com"
                 value={resetEmail}
                 onChange={(e) => setResetEmail(e.target.value)}
                 required
@@ -214,15 +209,15 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => { setShowResetModal(false); setError(""); setMessage(""); }}
-                  className="flex-1 bg-[#1a1a1a] text-white py-3 rounded-xl hover:bg-[#2a2a2a] transition-colors"
+                  className="flex-1 bg-surface-2 text-white text-sm py-2.5 rounded-lg hover:bg-[#2a2a2a] transition-colors font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-[#00e676] text-black font-bold py-3 rounded-xl hover:bg-[#00c853] transition-colors"
+                  className="flex-1 bg-primary text-inverse text-sm font-semibold py-2.5 rounded-lg hover:bg-[#00c853] transition-colors"
                 >
-                  Send Reset Link
+                  Send Link
                 </button>
               </div>
             </form>

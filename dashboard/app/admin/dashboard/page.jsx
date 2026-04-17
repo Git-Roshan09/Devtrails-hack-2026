@@ -6,8 +6,9 @@ import { useRouter } from "next/navigation";
 import { signOut } from "firebase/auth";
 import { auth } from "../../../firebase";
 import Image from "next/image";
+import { Users, ShieldCheck, AlertTriangle, CircleDollarSign, ClipboardList, CheckCircle2, TrendingUp, Map, BellDot, MapPin, Activity } from "lucide-react";
 
-const Map = dynamic(() => import("../../../components/HexMap"), { ssr: false });
+const HexMap = dynamic(() => import("../../../components/HexMap"), { ssr: false });
 
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
@@ -26,20 +27,15 @@ export default function Dashboard() {
   const [selectedZone, setSelectedZone] = useState("velachery");
   const [toast, setToast] = useState(null);
 
-  // Check for mock user session
   useEffect(() => {
     const stored = sessionStorage.getItem("mockUser");
-    if (stored) {
-      setMockUser(JSON.parse(stored));
-    }
+    if (stored) setMockUser(JSON.parse(stored));
   }, []);
 
   useEffect(() => {
     if (currentUser === undefined) return;
-    // Allow access if either Firebase user or mock user exists
     if (!currentUser && !mockUser) {
-      const stored = sessionStorage.getItem("mockUser");
-      if (!stored) router.push("/");
+      if (!sessionStorage.getItem("mockUser")) router.push("/");
     }
   }, [currentUser, mockUser, router]);
 
@@ -62,7 +58,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchAll();
-    const timer = setInterval(fetchAll, 10_000); 
+    const timer = setInterval(fetchAll, 10_000);
     return () => clearInterval(timer);
   }, [fetchAll]);
 
@@ -75,10 +71,10 @@ export default function Dashboard() {
         body: JSON.stringify({ zone: selectedZone, event_type: "flood", rain_mm: 38, traffic_kmh: 2.5 }),
       });
       const data = await res.json();
-      showToast(`🌊 Disruption fired in ${selectedZone}! Event ID: ${data.event_id?.slice(0, 8)}`);
+      showToast(`Disruption fired in ${selectedZone}! Event ID: ${data.event_id?.slice(0, 8)}`);
       setTimeout(fetchAll, 2000);
     } catch (e) {
-      showToast("❌ Failed to simulate disruption");
+      showToast("Failed to simulate disruption");
     } finally {
       setSimulating(false);
     }
@@ -93,14 +89,14 @@ export default function Dashboard() {
     paid: "#00e676", approved: "#00e676",
     pending: "#ff9800", soft_flagged: "#ff9800",
     denied: "#f44336",
-  }[status] || "#888");
+  }[status] || "#888888");
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex items-center gap-3">
-          <Image src="/logo.png" alt="GigaChad" width={48} height={48} />
-          <div className="text-[#00e676] text-2xl font-bold animate-pulse">Loading GigaChad Dashboard...</div>
+          <Image src="/logo.png" alt="GigaChad" width={48} height={48} className="rounded-xl" />
+          <div className="text-primary text-xl font-bold animate-pulse">Loading Admin Overview...</div>
         </div>
       </div>
     );
@@ -108,166 +104,187 @@ export default function Dashboard() {
 
   const handleLogout = async () => {
     sessionStorage.removeItem("mockUser");
-    try {
-      await signOut(auth);
-    } catch (e) {}
+    try { await signOut(auth); } catch (e) { }
     router.push("/");
   };
 
+  const kpiData = [
+    { label: "Active Riders", value: stats?.total_riders ?? 0, highlight: false, icon: Users },
+    { label: "Active Policies", value: stats?.active_policies ?? 0, highlight: false, icon: ShieldCheck },
+    { label: "Active Disruptions", value: stats?.active_disruptions ?? 0, highlight: true, icon: AlertTriangle },
+    { label: "Total Paid Out", value: `₹${(stats?.total_paid_out_inr ?? 0).toFixed(0)}`, highlight: false, icon: CircleDollarSign },
+    { label: "Total Claims", value: stats?.total_claims ?? 0, highlight: false, icon: ClipboardList },
+    { label: "Paid Claims", value: stats?.paid_claims ?? 0, highlight: false, icon: CheckCircle2 },
+    { label: "Fraud Flagged", value: stats?.fraud_flagged ?? 0, highlight: true, icon: AlertTriangle },
+    { label: "Payout Rate", value: stats?.total_claims ? `${Math.round((stats.paid_claims / stats.total_claims) * 100)}%` : "—", highlight: false, icon: TrendingUp },
+  ];
+
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white font-sans">
+    <div className="min-h-screen bg-background text-white font-body selection:bg-primary/30 pb-16">
       {/* Toast */}
       {toast && (
-        <div className="fixed top-4 right-4 z-50 bg-[#1a2a1a] border border-[#00e676] rounded-xl px-5 py-3 text-sm text-[#00e676] shadow-2xl animate-fade-in">
+        <div className="fixed top-6 right-6 z-50 bg-surface-2 border border-primary rounded-lg px-5 py-3 text-sm font-medium text-primary shadow-xl animate-fade-in flex items-center gap-2">
+          <BellDot className="w-4 h-4" />
           {toast}
         </div>
       )}
 
       {/* Header */}
-      <header className="border-b border-[#1a1a1a] px-8 py-4 flex items-center justify-between">
+      <header className="border-b border-surface-2 bg-background/80 backdrop-blur-md sticky top-0 z-40 px-6 lg:px-10 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Image src="/logo.png" alt="GigaChad" width={40} height={40} />
+          <div className="w-10 h-10 overflow-hidden rounded-xl border border-surface-2">
+            <Image src="/logo.png" alt="G" width={40} height={40} />
+          </div>
           <div>
-            <h1 className="text-2xl font-black text-[#00e676] tracking-wider">GIGACHAD ADMIN</h1>
-            <p className="text-xs text-[#555] mt-0.5">AI-Powered Parametric Micro-Insurance — Insurer Dashboard</p>
+            <h1 className="text-xl font-black text-white tracking-tight leading-none">ADMINISTRATOR</h1>
+            <p className="text-[11px] text-muted font-medium mt-1 uppercase tracking-wider">Parametric Insurance Platform</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={handleLogout} 
-            className="text-xs border text-red-500 border-red-500/20 px-3 py-1 rounded hover:bg-red-500/10 transition-colors"
+        <div className="flex items-center gap-5">
+          <div className="hidden lg:flex items-center gap-2">
+            <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+            <span className="text-[11px] text-muted font-medium uppercase tracking-wider">Live System Sync</span>
+          </div>
+          <div className="w-px h-6 bg-surface-2 hidden lg:block" />
+          <button
+            onClick={handleLogout}
+            className="text-xs font-semibold text-red-600 hover:text-red-400 transition-colors"
           >
-            Logout
+            Sign Out
           </button>
-          <span className="w-2 h-2 bg-[#00e676] rounded-full animate-pulse" />
-          <span className="text-xs text-[#555]">Live · Polling every 10s</span>
         </div>
       </header>
 
-      <main className="px-8 py-6 space-y-6">
-        {/* KPI Cards */}
+      <main className="px-6 lg:px-10 py-8 space-y-8 max-w-[1600px] mx-auto">
+        {/* KPI Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { label: "Active Riders", value: stats?.total_riders ?? 0, color: "#00e676", icon: "👥" },
-            { label: "Active Policies", value: stats?.active_policies ?? 0, color: "#2196f3", icon: "🛡️" },
-            { label: "Active Disruptions", value: stats?.active_disruptions ?? 0, color: "#ff9800", icon: "🚨" },
-            { label: "Total Paid Out", value: `₹${(stats?.total_paid_out_inr ?? 0).toFixed(0)}`, color: "#e91e63", icon: "💸" },
-            { label: "Total Claims", value: stats?.total_claims ?? 0, color: "#9c27b0", icon: "📋" },
-            { label: "Paid Claims", value: stats?.paid_claims ?? 0, color: "#00e676", icon: "✅" },
-            { label: "Fraud Flagged", value: stats?.fraud_flagged ?? 0, color: "#f44336", icon: "🚨" },
-            { label: "Payout Rate", value: stats?.total_claims ? `${Math.round((stats.paid_claims / stats.total_claims) * 100)}%` : "—", color: "#00bcd4", icon: "📈" },
-          ].map(kpi => (
-            <div key={kpi.label} className="bg-[#111] rounded-2xl p-5 border border-[#1e1e1e] hover:border-[#2a2a2a] transition-all">
-              <div className="text-xl mb-2">{kpi.icon}</div>
-              <div className="text-2xl font-black" style={{ color: kpi.color }}>{kpi.value}</div>
-              <div className="text-xs text-[#555] mt-1">{kpi.label}</div>
-            </div>
-          ))}
+          {kpiData.map((kpi, idx) => {
+            const Icon = kpi.icon;
+            return (
+              <div key={idx} className={`rounded-xl p-5 border transition-all ${kpi.highlight && kpi.value > 0 ? "bg-red-500/5 border-red-500/20" : "bg-surface border-surface-2"}`}>
+                <div className="flex items-center justify-between mb-3 text-muted">
+                  <Icon className={`w-5 h-5 ${kpi.highlight && kpi.value > 0 ? "text-red-500" : "text-muted"}`} />
+                </div>
+                <div className={`text-3xl font-black ${kpi.highlight && kpi.value > 0 ? "text-red-500" : "text-white"}`}>{kpi.value}</div>
+                <div className="text-xs text-muted font-medium uppercase tracking-wider mt-1">{kpi.label}</div>
+              </div>
+            );
+          })}
         </div>
 
-        {/* Map + Simulate */}
+        {/* Action & Map Row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 bg-[#111] rounded-2xl border border-[#1e1e1e] overflow-hidden">
-            <div className="px-5 py-4 border-b border-[#1e1e1e] flex items-center justify-between">
-              <h2 className="font-bold text-sm">🗺️ Chennai Hex-Grid Live Map</h2>
-              <span className="text-xs text-[#555]">{disruptions.length} active disruption zone(s)</span>
+          <div className="lg:col-span-2 bg-surface rounded-xl border border-surface-2 overflow-hidden shadow-sm">
+            <div className="px-6 py-4 border-b border-surface-2 flex items-center justify-between bg-surface-2/30">
+              <div className="flex items-center gap-2">
+                <Map className="w-4 h-4 text-muted" />
+                <h2 className="font-semibold text-sm tracking-wide">Hex-Grid Live Network</h2>
+              </div>
+              <span className={`text-xs font-semibold ${disruptions.length > 0 ? "text-red-400 animate-pulse" : "text-muted"}`}>
+                {disruptions.length} ACTIVE ZONES
+              </span>
             </div>
-            <Map disruptions={disruptions} />
+            <div className="relative h-[450px]">
+              <HexMap disruptions={disruptions} />
+            </div>
           </div>
 
-          <div className="bg-[#111] rounded-2xl border border-[#1e1e1e] p-5 space-y-4">
-            <h2 className="font-bold text-sm">🚨 Simulate Disruption</h2>
-            <p className="text-xs text-[#555]">Fire a test disruption to trigger the auto-claim flow end-to-end.</p>
-
-            <div>
-              <label className="text-xs text-[#888] block mb-2">Select Zone</label>
-              <div className="space-y-2">
-                {ZONES.map(zone => (
-                  <button
-                    key={zone}
-                    onClick={() => setSelectedZone(zone)}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                      selectedZone === zone
-                        ? "bg-[#00e676] text-black"
-                        : "bg-[#1a1a1a] text-[#888] hover:bg-[#222]"
-                    }`}
-                  >
-                    📍 {zone.replace("_", " ").replace(/\b\w/g, l => l.toUpperCase())}
-                  </button>
-                ))}
-              </div>
+          <div className="bg-surface rounded-xl border border-surface-2 p-6 flex flex-col">
+            <div className="flex items-center gap-2 mb-2">
+              <Activity className="w-5 h-5 text-primary" />
+              <h2 className="font-semibold text-base">Simulate Disruption</h2>
             </div>
+            <p className="text-sm text-muted mb-6 leading-relaxed">
+              Trigger a controlled weather/traffic event to observe the end-to-end automated claim and payout pipeline.
+            </p>
 
-            <button
-              onClick={simulateDisruption}
-              disabled={simulating}
-              className="w-full bg-[#ff3b3b] hover:bg-[#ff5555] disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-all text-sm"
-            >
-              {simulating ? "⏳ Triggering..." : "🌊 Simulate Flood Disruption"}
-            </button>
+            <div className="flex-1 space-y-5">
+              <div>
+                <label className="text-xs text-muted font-bold uppercase tracking-wider mb-3 block">Target Hex Zone</label>
+                <div className="space-y-2">
+                  {ZONES.map(zone => (
+                    <button
+                      key={zone}
+                      onClick={() => setSelectedZone(zone)}
+                      className={`w-full text-left px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors flex items-center gap-3 ${selectedZone === zone
+                        ? "bg-primary text-inverse"
+                        : "bg-surface-2 text-muted hover:bg-surface-2/80 hover:text-white border border-transparent hover:border-surface-2"
+                        }`}
+                    >
+                      <MapPin className="w-4 h-4" />
+                      {zone.replace("_", " ").replace(/\b\w/g, l => l.toUpperCase())}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-            {/* Active Disruptions */}
-            <div>
-              <h3 className="text-xs text-[#888] font-bold mb-2">ACTIVE DISRUPTIONS</h3>
-              {disruptions.length === 0 ? (
-                <p className="text-xs text-[#444]">All clear in Chennai ☀️</p>
-              ) : (
-                disruptions.map(d => (
-                  <div key={d.id} className="bg-[#1a0a0a] border border-[#ff3b3b33] rounded-lg p-3 mb-2">
-                    <div className="text-xs font-bold text-[#ff9800]">⚡ {d.zone_name}</div>
-                    <div className="text-xs text-[#666] mt-1">{d.event_type} · Rain: {d.rain_mm}mm · Traffic: {d.traffic_kmh}km/h</div>
-                  </div>
-                ))
-              )}
+              <button
+                onClick={simulateDisruption}
+                disabled={simulating}
+                className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/50 disabled:opacity-50 font-bold py-3.5 rounded-lg transition-colors text-sm flex items-center justify-center gap-2"
+              >
+                <AlertTriangle className="w-4 h-4" />
+                {simulating ? "TRIGGERING EVENT..." : "INITIATE FLOOD DISRUPTION"}
+              </button>
             </div>
           </div>
         </div>
 
         {/* Claims Table */}
-        <div className="bg-[#111] rounded-2xl border border-[#1e1e1e] overflow-hidden">
-          <div className="px-5 py-4 border-b border-[#1e1e1e]">
-            <h2 className="font-bold text-sm">📋 Recent Claims</h2>
+        <div className="bg-surface rounded-xl border border-surface-2 overflow-hidden shadow-sm">
+          <div className="px-6 py-4 border-b border-surface-2 bg-surface-2/30">
+            <div className="flex items-center gap-2">
+              <ClipboardList className="w-4 h-4 text-muted" />
+              <h2 className="font-semibold text-sm tracking-wide">Recent Claims Register</h2>
+            </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[#1e1e1e] text-[#555] text-xs">
-                  <th className="text-left px-5 py-3">CLAIM ID</th>
-                  <th className="text-left px-5 py-3">RIDER</th>
-                  <th className="text-left px-5 py-3">PAYOUT</th>
-                  <th className="text-left px-5 py-3">FRAUD SCORE</th>
-                  <th className="text-left px-5 py-3">STATUS</th>
-                  <th className="text-left px-5 py-3">FLAGS</th>
-                  <th className="text-left px-5 py-3">TIME</th>
+                <tr className="border-b border-surface-2 bg-background text-muted text-xs uppercase tracking-wider">
+                  <th className="text-left font-semibold px-6 py-4">Claim ID</th>
+                  <th className="text-left font-semibold px-6 py-4">Rider</th>
+                  <th className="text-left font-semibold px-6 py-4">Payout</th>
+                  <th className="text-left font-semibold px-6 py-4">Fraud Score</th>
+                  <th className="text-left font-semibold px-6 py-4">Status</th>
+                  <th className="text-left font-semibold px-6 py-4">Flags</th>
+                  <th className="text-left font-semibold px-6 py-4">Time</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-surface-2">
                 {claims.length === 0 ? (
-                  <tr><td colSpan={7} className="text-center py-10 text-[#444]">No claims yet — simulate a disruption to see the magic!</td></tr>
+                  <tr>
+                    <td colSpan={7} className="text-center py-12 text-muted italic">
+                      Systems quiet. Awaiting disruption triggers to generate automated payouts.
+                    </td>
+                  </tr>
                 ) : (
                   claims.map(c => (
-                    <tr key={c.id} className="border-b border-[#0e0e0e] hover:bg-[#141414] transition-colors">
-                      <td className="px-5 py-3 font-mono text-xs text-[#555]">{c.id?.slice(0, 8)}</td>
-                      <td className="px-5 py-3 text-xs text-[#888]">{c.rider_id?.slice(0, 8)}</td>
-                      <td className="px-5 py-3 font-bold text-[#00e676]">₹{c.total_payout || 0}</td>
-                      <td className="px-5 py-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-16 h-1.5 bg-[#1a1a1a] rounded-full overflow-hidden">
+                    <tr key={c.id} className="hover:bg-surface-2/30 transition-colors">
+                      <td className="px-6 py-4 font-mono text-xs text-muted">{c.id?.slice(0, 8)}</td>
+                      <td className="px-6 py-4 text-xs font-semibold text-white">{c.rider_id?.slice(0, 8)}</td>
+                      <td className="px-6 py-4 font-bold text-primary">₹{c.total_payout || 0}</td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-16 h-1.5 bg-surface-2 rounded-full overflow-hidden">
                             <div
                               className="h-full rounded-full"
-                              style={{ width: `${(c.fraud_score || 0) * 100}%`, backgroundColor: c.fraud_score > 0.6 ? "#f44336" : c.fraud_score > 0.3 ? "#ff9800" : "#00e676" }}
+                              style={{ width: `${(c.fraud_score || 0) * 100}%`, backgroundColor: c.fraud_score > 0.6 ? "#ef4444" : c.fraud_score > 0.3 ? "#f59e0b" : "#00e676" }}
                             />
                           </div>
-                          <span className="text-xs text-[#666]">{((c.fraud_score || 0) * 100).toFixed(0)}%</span>
+                          <span className="text-xs font-medium text-muted">{((c.fraud_score || 0) * 100).toFixed(0)}%</span>
                         </div>
                       </td>
-                      <td className="px-5 py-3">
-                        <span className="px-2 py-0.5 rounded-full text-xs font-semibold" style={{ backgroundColor: getStatusColor(c.status) + "22", color: getStatusColor(c.status) }}>
+                      <td className="px-6 py-4">
+                        <span
+                          className="px-2.5 py-1 rounded border text-xs font-semibold uppercase tracking-wider inline-block"
+                          style={{ backgroundColor: getStatusColor(c.status) + "10", borderColor: getStatusColor(c.status) + "30", color: getStatusColor(c.status) }}
+                        >
                           {c.status}
                         </span>
                       </td>
-                      <td className="px-5 py-3 text-xs text-[#f44336]">{c.fraud_flags?.join(", ") || "—"}</td>
-                      <td className="px-5 py-3 text-xs text-[#555]">{c.created_at?.replace("T", " ").slice(0, 16)}</td>
+                      <td className="px-6 py-4 text-xs text-red-400 font-medium">{c.fraud_flags?.join(", ") || "—"}</td>
+                      <td className="px-6 py-4 text-xs text-muted">{c.created_at?.replace("T", " ").slice(0, 16)}</td>
                     </tr>
                   ))
                 )}
