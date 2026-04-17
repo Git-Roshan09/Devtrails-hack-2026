@@ -311,7 +311,7 @@ To run GigaChad locally, you can use either:
 
 ---
 
-### ✅ Prerequisites
+### Prerequisites
 
 - Python 3.11+
 - Node.js 18+ and npm
@@ -321,7 +321,7 @@ To run GigaChad locally, you can use either:
 
 ---
 
-### 🐳 Docker Setup (Recommended)
+### Docker Setup (Recommended)
 
 1. Create required env files:
   - `services/backend/.env`
@@ -340,7 +340,7 @@ docker compose up --build
 
 ---
 
-### 🧰 Manual Setup
+### Manual Setup
 
 **Backend (FastAPI)**
 ```bash
@@ -374,29 +374,16 @@ npm run start
 
 ---
 
-## > 🚀 🇩‌🇪‌🇵‌🇱‌🇴‌🇾‌🇲‌🇪‌🇳‌🇹‌
+## > 🇩‌🇪‌🇵‌🇱‌🇴‌🇾‌🇲‌🇪‌🇳‌🇹‌
 
-### 🌍 Live Frontend
+### Live Frontend
 
-- **Production URL:** https://devtrails-hack-2026.vercel.app/
-
----
-
-### 📦 Release Channel
-
-- **Deployment Source:** GitHub Releases
-- **Flow:** Tagged release -> build artifact -> deploy target update
-
-### ☁️ Live Deployment (Azure)
-
-Suggested production topology:
-- **Backend API:** Azure App Service or Azure Container Apps
-- **Dashboard:** Azure Static Web Apps or App Service
-- **PostgreSQL:** Azure Database for PostgreSQL
-- **Redis:** Azure Cache for Redis
-- **Secrets:** Azure Key Vault
-- **Observability:** Azure Monitor + Application Insights
-
+<a href="https://devtrails-hack-2026.vercel.app/">
+  <img src="https://img.shields.io/badge/Frontend-Live_on_Vercel-000000?style=for-the-badge&logo=vercel" alt="Frontend Live">
+</a>
+<a href="https://github.com/Git-Roshan09/Devtrails-hack-2026/releases/tag/gigachad">
+  <img src="https://img.shields.io/badge/Mobile_App-GitHub_Release-181717?style=for-the-badge&logo=github" alt="Mobile App Release">
+</a>
 ---
 
 ### 🔌 Services + Ports
