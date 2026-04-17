@@ -376,8 +376,6 @@ npm run start
 
 ## > 🇩‌🇪‌🇵‌🇱‌🇴‌🇾‌🇲‌🇪‌🇳‌🇹‌
 
-### Live Frontend
-
 <div align="center">
 
   <h2>Live Access</h2>
