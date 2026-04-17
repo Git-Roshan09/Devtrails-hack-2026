@@ -378,12 +378,25 @@ npm run start
 
 ### Live Frontend
 
-<a href="https://devtrails-hack-2026.vercel.app/">
-  <img src="https://img.shields.io/badge/Frontend-Live_on_Vercel-000000?style=for-the-badge&logo=vercel" alt="Frontend Live">
-</a>
-<a href="https://github.com/Git-Roshan09/Devtrails-hack-2026/releases/tag/gigachad">
-  <img src="https://img.shields.io/badge/Mobile_App-GitHub_Release-181717?style=for-the-badge&logo=github" alt="Mobile App Release">
-</a>
+<div align="center">
+
+  <h2>Live Access</h2>
+
+  <br>
+
+  <a href="https://devtrails-hack-2026.vercel.app/">
+    <img src="https://img.shields.io/badge/Frontend-Live_on_Vercel-000000?style=for-the-badge&logo=vercel" alt="Frontend Live">
+  </a>
+
+  <br><br>
+
+  <a href="https://github.com/Git-Roshan09/Devtrails-hack-2026/releases/tag/gigachad">
+    <img src="https://img.shields.io/badge/Mobile_App-GitHub_Release-181717?style=for-the-badge&logo=github" alt="Mobile App Release">
+  </a>
+
+  <hr>
+
+</div>
 ---
 
 ### 🔌 Services + Ports
