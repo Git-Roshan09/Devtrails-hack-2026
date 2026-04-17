@@ -17,7 +17,7 @@
   <br>
 
   <img src="https://img.shields.io/badge/Hackathon-Guidewire_DEVTrails_2026-blueviolet?style=for-the-badge" alt="Hackathon">
-  <img src="https://img.shields.io/badge/Status-Phase_1_Ideation-success?style=for-the-badge" alt="Status">
+  <img src="https://img.shields.io/badge/Status-Phase_3_SOAR-success?style=for-the-badge" alt="Status">
   <img src="https://img.shields.io/badge/Interface-WhatsApp_%2B_Telemetry-25D366?style=for-the-badge&logo=whatsapp&logoColor=white" alt="Platform">
   <img src="https://img.shields.io/badge/AI_Engine-Foundation_Models_%7C_Graph_Neural_Nets-FF6F00?style=for-the-badge&logo=openai&logoColor=white" alt="AI Models">
 
